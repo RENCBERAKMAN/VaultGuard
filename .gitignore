@@ -1,0 +1,76 @@
+##############################################################################
+# 1. VAULTGUARD ÖZEL GÜVENLİK VE SIRLAR (EN KRİTİK KISIM)
+##############################################################################
+# Yerel geliştirme sırlarını asla ama asla commit etme
+appsettings.Development.json
+appsettings.Local.json
+*.secrets.json
+.env
+.env.*
+secrets.json
+
+# Anahtar dosyaları ve sertifikalar
+*.snk
+*.pfx
+*.p12
+*.key
+*.pem
+
+##############################################################################
+# 2. .NET / VISUAL STUDIO STANDARTLARI
+##############################################################################
+# Build sonuçları
+[Bb]in/
+[Oo]bj/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+x64/
+x86/
+
+# Visual Studio dosyaları
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*.userprefs
+
+# Geçici dosyalar ve loglar
+*.log
+[Ll]og/
+[Ll]ogs/
+*.tmp
+*.tmp_proj
+
+##############################################################################
+# 3. VERİTABANI VE CACHE (VAULTGUARD ALTYAPISI)
+##############################################################################
+# PostgreSQL ve SQL Server yerel dosyaları
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.sqlite
+
+# Redis / Docker yerel kalıntıları
+.docker/
+docker-compose.override.yml
+
+##############################################################################
+# 4. ARAÇLAR VE IDE (RIDER & VS CODE)
+##############################################################################
+.idea/
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+##############################################################################
+# 5. İŞLETİM SİSTEMİ
+##############################################################################
+.DS_Store
+Thumbs.db
+desktop.ini
