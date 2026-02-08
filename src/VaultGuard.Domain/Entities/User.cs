@@ -107,10 +107,15 @@ public sealed class User
         // Email normalizasyonu
         var normalizedEmail = email.Trim().ToLower();
 
-        // Basit email format kontrolü (daha detaylý regex Infrastructure'da olabilir)
-        if (!normalizedEmail.Contains('@') || !normalizedEmail.Contains('.'))
+        // YENÝ YAPI (YAPIRTIRACAÐIN KISIM):
+        // Basit email format kontrolü (Geliþtirilmiþ versiyon)
+        if (!normalizedEmail.Contains('@') ||
+            !normalizedEmail.Contains('.') ||
+            normalizedEmail.StartsWith('@') ||
+            normalizedEmail.EndsWith('.'))
+        {
             throw new ArgumentException("Invalid email format.", nameof(email));
-
+        }
         // Email uzunluk kontrolü (RFC 5321)
         if (normalizedEmail.Length > 254)
             throw new ArgumentException("Email is too long (max 254 characters).", nameof(email));
