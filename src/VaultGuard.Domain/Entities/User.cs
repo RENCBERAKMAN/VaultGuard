@@ -26,6 +26,17 @@ public sealed class User
     public string Email { get; private set; } = string.Empty;
 
     /// <summary>
+    /// Kullanýcý adý (benzersiz olmalýdýr).
+    /// private set ile sadece iþ metodlarý üzerinden deðiþtirilebilir.
+    /// Kullaným alanlarý:
+    /// 1. Kullanýcý dostu giriþ (email yerine username ile login)
+    /// 2. Profil görüntüleme (@username formatýnda)
+    /// 3. Mention sistemi (sosyal özellikler için)
+    /// Maksimum uzunluk: 50 karakter
+    /// </summary>
+    public string Username { get; private set; } = string.Empty;
+
+    /// <summary>
     /// Kullanýcýnýn hashlenmiþ þifresi.
     /// Güvenlik kritik: Asla plain-text þifre saklanmaz!
     /// Hash algoritmasý: BCrypt veya Argon2 (Infrastructure katmanýnda uygulanýr)
@@ -91,12 +102,14 @@ public sealed class User
     /// 4. Domain events tetiklenebilir (ileride)
     /// </summary>
     /// <param name="email">Kullanýcýnýn e-posta adresi (benzersiz olmalý)</param>
+    /// <param name="username">Kullanýcý adý (benzersiz olmalý)</param>
     /// <param name="passwordHash">Hashlenmiþ þifre (plain-text deðil!)</param>
     /// <param name="role">Kullanýcý rolü (varsayýlan: "User")</param>
     /// <returns>Yeni User instance'ý</returns>
     /// <exception cref="ArgumentException">Parametreler geçersizse fýrlatýlýr</exception>
     public static User Create(
         string email,
+        string username,
         string passwordHash,
         string role = "User")
     {
@@ -107,8 +120,7 @@ public sealed class User
         // Email normalizasyonu
         var normalizedEmail = email.Trim().ToLower();
 
-        // YENÝ YAPI (YAPIRTIRACAÐIN KISIM):
-        // Basit email format kontrolü (Geliþtirilmiþ versiyon)
+        // Email format kontrolü (Geliþtirilmiþ versiyon)
         if (!normalizedEmail.Contains('@') ||
             !normalizedEmail.Contains('.') ||
             normalizedEmail.StartsWith('@') ||
@@ -116,9 +128,29 @@ public sealed class User
         {
             throw new ArgumentException("Invalid email format.", nameof(email));
         }
+
         // Email uzunluk kontrolü (RFC 5321)
         if (normalizedEmail.Length > 254)
             throw new ArgumentException("Email is too long (max 254 characters).", nameof(email));
+
+        // Username validation
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Username cannot be empty.", nameof(username));
+
+        var trimmedUsername = username.Trim();
+
+        // Username uzunluk kontrolü
+        if (trimmedUsername.Length < 3)
+            throw new ArgumentException("Username must be at least 3 characters.", nameof(username));
+
+        if (trimmedUsername.Length > 50)
+            throw new ArgumentException("Username is too long (max 50 characters).", nameof(username));
+
+        // Username format kontrolü (sadece alfanumerik ve alt çizgi)
+        if (!System.Text.RegularExpressions.Regex.IsMatch(trimmedUsername, @"^[a-zA-Z0-9_]+$"))
+            throw new ArgumentException(
+                "Username can only contain letters, numbers, and underscores.",
+                nameof(username));
 
         // PasswordHash validation
         if (string.IsNullOrWhiteSpace(passwordHash))
@@ -145,6 +177,7 @@ public sealed class User
         {
             Id = Guid.NewGuid(),
             Email = normalizedEmail,
+            Username = trimmedUsername,
             PasswordHash = passwordHash,
             Role = role,
             CreatedAt = DateTime.UtcNow,
@@ -179,6 +212,35 @@ public sealed class User
         Email = normalizedEmail;
 
         // TODO: Domain Event - EmailChangedEvent
+    }
+
+    /// <summary>
+    /// Kullanýcý adýný günceller.
+    /// Domain event tetiklenebilir: UsernameChangedEvent (ileride)
+    /// </summary>
+    /// <param name="newUsername">Yeni kullanýcý adý</param>
+    /// <exception cref="ArgumentException">Geçersiz username formatý</exception>
+    public void UpdateUsername(string newUsername)
+    {
+        if (string.IsNullOrWhiteSpace(newUsername))
+            throw new ArgumentException("Username cannot be empty.", nameof(newUsername));
+
+        var trimmedUsername = newUsername.Trim();
+
+        if (trimmedUsername.Length < 3)
+            throw new ArgumentException("Username must be at least 3 characters.", nameof(newUsername));
+
+        if (trimmedUsername.Length > 50)
+            throw new ArgumentException("Username is too long (max 50 characters).", nameof(newUsername));
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(trimmedUsername, @"^[a-zA-Z0-9_]+$"))
+            throw new ArgumentException(
+                "Username can only contain letters, numbers, and underscores.",
+                nameof(newUsername));
+
+        Username = trimmedUsername;
+
+        // TODO: Domain Event - UsernameChangedEvent
     }
 
     /// <summary>
@@ -262,6 +324,16 @@ public sealed class User
 
         // TODO: Domain Event - UserLoggedInEvent
         // Güvenlik: Anormal lokasyon/IP tespiti için kullanýlabilir
+    }
+
+    /// <summary>
+    /// Kullanýcýnýn son giriþ zamanýný belirli bir deðere ayarlar.
+    /// Test ve migration senaryolarý için kullanýlýr.
+    /// </summary>
+    /// <param name="loginTime">Ayarlanacak giriþ zamaný</param>
+    public void UpdateLastLogin(DateTime loginTime)
+    {
+        LastLoginAt = loginTime;
     }
 
     /// <summary>

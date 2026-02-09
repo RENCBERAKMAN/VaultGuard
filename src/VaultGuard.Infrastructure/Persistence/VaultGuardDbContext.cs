@@ -57,7 +57,7 @@ public class VaultGuardDbContext : DbContext
             optionsBuilder.EnableDetailedErrors();
         }
 
-        // PERFORMANS: Karmaþýk sorgular için query splitting'i etkinleþtir
-        optionsBuilder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+        // NOT: UseQuerySplittingBehavior artýk burada deðil,
+        // UseSqlServer içinde yapýlandýrýlacak (aþaðýda örnek var)
     }
 }

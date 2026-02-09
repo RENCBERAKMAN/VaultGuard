@@ -68,6 +68,26 @@ public sealed class Secret
     /// </summary>
     public DateTime? LastAccessedAt { get; set; }
 
+    /// <summary>
+    /// Soft delete bayraðý (yumuþak silme).
+    /// true ise secret "silinmiþ" olarak iþaretlenir ancak veritabanýndan fiziksel olarak silinmez.
+    /// Kullaným senaryolarý:
+    /// - GDPR uyumluluðu (kullanýcý verilerini geri yükleme hakký)
+    /// - Yanlýþlýkla silme durumlarýnda kurtarma
+    /// - Compliance gereksinimleri (30 gün saklama politikasý)
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+
+    /// <summary>
+    /// Secret'ýn silindiði tarih ve saat (UTC).
+    /// Nullable olmasýnýn nedeni: Aktif secret'lar için null olacak.
+    /// Kullaným alanlarý:
+    /// - Saklama politikasý (30 gün sonra hard delete)
+    /// - Audit raporlarý
+    /// - Kurtarma iþlemleri için zaman damgasý
+    /// </summary>
+    public DateTime? DeletedAt { get; set; }
+
     // ============================================================================
     // CONSTRUCTOR
     // ============================================================================
@@ -116,13 +136,15 @@ public sealed class Secret
 
         return new Secret
         {
-            Id = Guid.NewGuid(), // Yeni benzersiz ID
-            Name = name.Trim(), // Boþluklarý temizle
+            Id = Guid.NewGuid(),
+            Name = name.Trim(),
             EncryptedData = encryptedData,
             IV = iv,
             OwnerId = ownerId,
-            CreatedAt = DateTime.UtcNow, // Her zaman UTC kullan (timezone sorunlarý engellenir)
-            LastAccessedAt = null // Ýlk oluþturulduðunda null
+            CreatedAt = DateTime.UtcNow,
+            LastAccessedAt = null,
+            IsDeleted = false,
+            DeletedAt = null
         };
     }
 
@@ -169,5 +191,28 @@ public sealed class Secret
 
         EncryptedData = newEncryptedData;
         IV = newIV;
+    }
+
+    /// <summary>
+    /// Secret'ý soft delete ile iþaretle.
+    /// Fiziksel olarak veritabanýndan silinmez, sadece IsDeleted = true olur.
+    /// </summary>
+    public void MarkAsDeleted()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+
+        // TODO: Domain Event - SecretDeletedEvent
+    }
+
+    /// <summary>
+    /// Soft delete edilmiþ secret'ý geri yükle.
+    /// </summary>
+    public void Restore()
+    {
+        IsDeleted = false;
+        DeletedAt = null;
+
+        // TODO: Domain Event - SecretRestoredEvent
     }
 }

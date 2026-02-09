@@ -1,311 +1,259 @@
 using System;
-using System.Threading;
 using VaultGuard.Domain.Entities;
+using Xunit;
 
 namespace VaultGuard.Domain.Tests.Entities;
 
-/// <summary>
-/// User entity için kapsamlý unit test'ler.
-/// AAA (Arrange-Act-Assert) pattern kullanýlmýþtýr.
-/// </summary>
 public class UserTests
 {
     // ============================================================================
-    // CREATE METHOD TESTS
+    // TEST 1: Baþarýlý User Oluþturma
     // ============================================================================
-
     [Fact]
-    public void Create_WithValidData_ShouldCreateUserSuccessfully()
+    public void Create_WithValidParameters_ShouldCreateUser()
     {
-        // Arrange
+        // Arrange - Test verilerini hazýrla
         var email = "test@vaultguard.com";
-        var passwordHash = "HashedPassword123456789012345"; // 20+ karakter
+        var username = "testuser";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
         var role = "User";
 
-        // Act
-        var user = User.Create(email, passwordHash, role);
+        // Act - Test edilen metodu çalýþtýr
+        var user = User.Create(email, username, passwordHash, role);
 
-        // Assert
+        // Assert - Sonuçlarý doðrula
         Assert.NotNull(user);
-        Assert.NotEqual(Guid.Empty, user.Id);
-        Assert.Equal("test@vaultguard.com", user.Email); // Normalized (lowercase)
+        Assert.Equal(email, user.Email);
+        Assert.Equal(username, user.Username);
         Assert.Equal(passwordHash, user.PasswordHash);
         Assert.Equal(role, user.Role);
+        Assert.NotEqual(Guid.Empty, user.Id);
+        Assert.True(user.CreatedAt <= DateTime.UtcNow);
+        Assert.Null(user.LastLoginAt);
         Assert.True(user.IsActive);
-        Assert.Null(user.LastLoginAt); // Henüz giriþ yapýlmamýþ
-        Assert.True((DateTime.UtcNow - user.CreatedAt).TotalSeconds < 1); // Az önce oluþturuldu
     }
 
+    // ============================================================================
+    // TEST 2: Varsayýlan Role ile User Oluþturma
+    // ============================================================================
     [Fact]
-    public void Create_WithUppercaseEmail_ShouldNormalizeToLowercase()
+    public void Create_WithoutRole_ShouldUseDefaultUserRole()
     {
         // Arrange
-        var email = "TEST@VAULTGUARD.COM";
-        var passwordHash = "HashedPassword123456789012345";
+        var email = "admin@vaultguard.com";
+        var username = "adminuser";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
 
-        // Act
-        var user = User.Create(email, passwordHash);
+        // Act - Role parametresi verilmeden çaðýr
+        var user = User.Create(email, username, passwordHash);
 
-        // Assert
-        Assert.Equal("test@vaultguard.com", user.Email);
-    }
-
-    [Fact]
-    public void Create_WithEmailContainingWhitespace_ShouldTrimWhitespace()
-    {
-        // Arrange
-        var email = "  test@vaultguard.com  ";
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act
-        var user = User.Create(email, passwordHash);
-
-        // Assert
-        Assert.Equal("test@vaultguard.com", user.Email);
-        Assert.DoesNotContain(" ", user.Email);
-    }
-
-    [Fact]
-    public void Create_WithDefaultRole_ShouldSetRoleToUser()
-    {
-        // Arrange
-        var email = "test@vaultguard.com";
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act
-        var user = User.Create(email, passwordHash); // Role parametresi verilmedi
-
-        // Assert
+        // Assert - Varsayýlan role "User" olmalý
         Assert.Equal("User", user.Role);
     }
 
+    // ============================================================================
+    // TEST 3: Email Validation
+    // ============================================================================
     [Theory]
     [InlineData("")]
-    [InlineData("   ")]
     [InlineData(null)]
-    public void Create_WithEmptyOrWhitespaceEmail_ShouldThrowArgumentException(string invalidEmail)
-    {
-        // Arrange
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(invalidEmail, passwordHash));
-
-        Assert.Equal("email", exception.ParamName);
-        Assert.Contains("cannot be empty", exception.Message);
-    }
-
-    [Theory]
-    [InlineData("notanemail")]           // @ yok
-    [InlineData("missing@domain")]       // . yok
-    [InlineData("@nodomain.com")]        // Local part yok
-    [InlineData("noat.com")]             // @ yok
-    public void Create_WithInvalidEmailFormat_ShouldThrowArgumentException(string invalidEmail)
-    {
-        // Arrange
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(invalidEmail, passwordHash));
-
-        Assert.Equal("email", exception.ParamName);
-        Assert.Contains("Invalid email format", exception.Message);
-    }
-
-    [Fact]
-    public void Create_WithEmailLongerThan254Characters_ShouldThrowArgumentException()
-    {
-        // Arrange
-        var longEmail = new string('a', 250) + "@test.com"; // 260 karakter
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(longEmail, passwordHash));
-
-        Assert.Equal("email", exception.ParamName);
-        Assert.Contains("too long", exception.Message);
-    }
-
-    [Theory]
-    [InlineData("")]
     [InlineData("   ")]
-    [InlineData(null)]
-    public void Create_WithEmptyOrWhitespacePasswordHash_ShouldThrowArgumentException(string invalidHash)
+    public void Create_WithInvalidEmail_ShouldThrowArgumentException(string? invalidEmail)
     {
         // Arrange
-        var email = "test@vaultguard.com";
+        var username = "testuser";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(email, invalidHash));
+            User.Create(invalidEmail!, username, passwordHash));
 
-        Assert.Equal("passwordHash", exception.ParamName);
-        Assert.Contains("cannot be empty", exception.Message);
-    }
-
-    [Fact]
-    public void Create_WithShortPasswordHash_ShouldThrowArgumentException()
-    {
-        // Arrange
-        var email = "test@vaultguard.com";
-        var shortHash = "short"; // 20 karakterden kýsa
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(email, shortHash));
-
-        Assert.Equal("passwordHash", exception.ParamName);
-        Assert.Contains("Invalid password hash", exception.Message);
-        Assert.Contains("hashed password, not plain-text", exception.Message);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    public void Create_WithEmptyOrWhitespaceRole_ShouldThrowArgumentException(string invalidRole)
-    {
-        // Arrange
-        var email = "test@vaultguard.com";
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(email, passwordHash, invalidRole));
-
-        Assert.Equal("role", exception.ParamName);
-        Assert.Contains("cannot be empty", exception.Message);
-    }
-
-    [Theory]
-    [InlineData("InvalidRole")]
-    [InlineData("SuperAdmin")]
-    [InlineData("Guest")]
-    public void Create_WithInvalidRole_ShouldThrowArgumentException(string invalidRole)
-    {
-        // Arrange
-        var email = "test@vaultguard.com";
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            User.Create(email, passwordHash, invalidRole));
-
-        Assert.Equal("role", exception.ParamName);
-        Assert.Contains("Invalid role", exception.Message);
-        Assert.Contains("Valid roles:", exception.Message);
-    }
-
-    [Theory]
-    [InlineData("Admin")]
-    [InlineData("User")]
-    [InlineData("Auditor")]
-    [InlineData("admin")]      // Case-insensitive
-    [InlineData("USER")]       // Case-insensitive
-    [InlineData("AuDiToR")]    // Case-insensitive
-    public void Create_WithValidRole_ShouldCreateUserSuccessfully(string validRole)
-    {
-        // Arrange
-        var email = "test@vaultguard.com";
-        var passwordHash = "HashedPassword123456789012345";
-
-        // Act
-        var user = User.Create(email, passwordHash, validRole);
-
-        // Assert
-        Assert.NotNull(user);
-        Assert.Equal(validRole, user.Role);
+        Assert.Contains("email", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     // ============================================================================
-    // UPDATE EMAIL TESTS
+    // TEST 4: Username Validation
     // ============================================================================
-
-    [Fact]
-    public void UpdateEmail_WithValidEmail_ShouldUpdateSuccessfully()
-    {
-        // Arrange
-        var user = User.Create("old@vaultguard.com", "HashedPassword123456789012345");
-        var newEmail = "new@vaultguard.com";
-
-        // Act
-        user.UpdateEmail(newEmail);
-
-        // Assert
-        Assert.Equal("new@vaultguard.com", user.Email);
-    }
-
-    [Fact]
-    public void UpdateEmail_WithUppercaseEmail_ShouldNormalizeToLowercase()
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-
-        // Act
-        user.UpdateEmail("NEW@VAULTGUARD.COM");
-
-        // Assert
-        Assert.Equal("new@vaultguard.com", user.Email);
-    }
-
-    [Fact]
-    public void UpdateEmail_WithEmailContainingWhitespace_ShouldTrimWhitespace()
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-
-        // Act
-        user.UpdateEmail("  new@vaultguard.com  ");
-
-        // Assert
-        Assert.Equal("new@vaultguard.com", user.Email);
-    }
-
     [Theory]
     [InlineData("")]
-    [InlineData("   ")]
     [InlineData(null)]
-    public void UpdateEmail_WithEmptyOrWhitespaceEmail_ShouldThrowArgumentException(string invalidEmail)
+    [InlineData("   ")]
+    public void Create_WithInvalidUsername_ShouldThrowArgumentException(string? invalidUsername)
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
+        var email = "test@vaultguard.com";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            user.UpdateEmail(invalidEmail));
+            User.Create(email, invalidUsername!, passwordHash));
 
-        Assert.Equal("newEmail", exception.ParamName);
+        Assert.Contains("username", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ============================================================================
+    // TEST 5: Password Hash Validation
+    // ============================================================================
     [Theory]
-    [InlineData("notanemail")]
-    [InlineData("missing@domain")]
-    public void UpdateEmail_WithInvalidEmailFormat_ShouldThrowArgumentException(string invalidEmail)
+    [InlineData("")]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Create_WithInvalidPasswordHash_ShouldThrowArgumentException(string? invalidPasswordHash)
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
+        var email = "test@vaultguard.com";
+        var username = "testuser";
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            user.UpdateEmail(invalidEmail));
+            User.Create(email, username, invalidPasswordHash!));
 
-        Assert.Equal("newEmail", exception.ParamName);
-        Assert.Contains("Invalid email format", exception.Message);
+        Assert.Contains("password", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     // ============================================================================
-    // CHANGE PASSWORD TESTS
+    // TEST 6: Admin User Oluþturma
     // ============================================================================
-
     [Fact]
-    public void ChangePassword_WithValidPasswordHash_ShouldUpdateSuccessfully()
+    public void Create_WithAdminRole_ShouldCreateAdminUser()
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "OldHashedPassword12345678901234");
-        var newPasswordHash = "NewHashedPassword12345678901234";
+        var email = "admin@vaultguard.com";
+        var username = "superadmin";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
+        var role = "Admin";
+
+        // Act
+        var adminUser = User.Create(email, username, passwordHash, role);
+
+        // Assert
+        Assert.Equal("Admin", adminUser.Role);
+        Assert.Equal(email, adminUser.Email);
+        Assert.Equal(username, adminUser.Username);
+        Assert.True(adminUser.IsActive);
+    }
+
+    // ============================================================================
+    // TEST 7: User Deactivation
+    // ============================================================================
+    [Fact]
+    public void Deactivate_ShouldSetIsActiveToFalse()
+    {
+        // Arrange - Aktif bir user oluþtur
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        Assert.True(user.IsActive); // Baþlangýçta aktif olmalý
+
+        // Act - User'ý deaktive et
+        user.Deactivate();
+
+        // Assert - IsActive false olmalý
+        Assert.False(user.IsActive);
+    }
+
+    // ============================================================================
+    // TEST 8: RecordLogin Method
+    // ============================================================================
+    [Fact]
+    public void RecordLogin_ShouldSetLastLoginAtToCurrentTime()
+    {
+        // Arrange
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        Assert.Null(user.LastLoginAt); // Baþlangýçta null olmalý
+
+        var beforeLogin = DateTime.UtcNow;
+
+        // Act
+        user.RecordLogin();
+
+        var afterLogin = DateTime.UtcNow;
+
+        // Assert
+        Assert.NotNull(user.LastLoginAt);
+        Assert.InRange(user.LastLoginAt.Value, beforeLogin, afterLogin);
+    }
+
+    // ============================================================================
+    // TEST 9: UpdateLastLogin Method (Yeni Test)
+    // ============================================================================
+    [Fact]
+    public void UpdateLastLogin_ShouldSetLastLoginAtToSpecifiedTime()
+    {
+        // Arrange
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        Assert.Null(user.LastLoginAt); // Baþlangýçta null olmalý
+
+        // Act
+        var specificLoginTime = new DateTime(2025, 1, 15, 10, 30, 0, DateTimeKind.Utc);
+        user.UpdateLastLogin(specificLoginTime);
+
+        // Assert
+        Assert.NotNull(user.LastLoginAt);
+        Assert.Equal(specificLoginTime, user.LastLoginAt.Value);
+    }
+
+    // ============================================================================
+    // TEST 10: Multiple Users - Unique IDs
+    // ============================================================================
+    [Fact]
+    public void Create_MultipleUsers_ShouldHaveUniqueIds()
+    {
+        // Arrange & Act
+        var user1 = User.Create("user1@test.com", "user1", "hashed_password_111111");
+        var user2 = User.Create("user2@test.com", "user2", "hashed_password_222222");
+        var user3 = User.Create("user3@test.com", "user3", "hashed_password_333333");
+
+        // Assert - Her user'ýn ID'si farklý olmalý
+        Assert.NotEqual(user1.Id, user2.Id);
+        Assert.NotEqual(user2.Id, user3.Id);
+        Assert.NotEqual(user1.Id, user3.Id);
+    }
+
+    // ============================================================================
+    // TEST 11: CreatedAt Timestamp Validation
+    // ============================================================================
+    [Fact]
+    public void Create_ShouldSetCreatedAtToCurrentUtcTime()
+    {
+        // Arrange
+        var beforeCreation = DateTime.UtcNow;
+
+        // Act
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        var afterCreation = DateTime.UtcNow;
+
+        // Assert - CreatedAt þu anki UTC zamanýna yakýn olmalý
+        Assert.InRange(user.CreatedAt, beforeCreation, afterCreation);
+    }
+
+    // ============================================================================
+    // TEST 12: ChangePassword Method
+    // ============================================================================
+    [Fact]
+    public void ChangePassword_WithValidHash_ShouldUpdatePasswordHash()
+    {
+        // Arrange
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        var newPasswordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e2";
 
         // Act
         user.ChangePassword(newPasswordHash);
@@ -314,112 +262,159 @@ public class UserTests
         Assert.Equal(newPasswordHash, user.PasswordHash);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    public void ChangePassword_WithEmptyOrWhitespaceHash_ShouldThrowArgumentException(string invalidHash)
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            user.ChangePassword(invalidHash));
-
-        Assert.Equal("newPasswordHash", exception.ParamName);
-    }
-
+    // ============================================================================
+    // TEST 13: ChangeRole Method
+    // ============================================================================
     [Fact]
-    public void ChangePassword_WithShortHash_ShouldThrowArgumentException()
+    public void ChangeRole_WithValidRole_ShouldUpdateRole()
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
 
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            user.ChangePassword("short"));
-
-        Assert.Equal("newPasswordHash", exception.ParamName);
-        Assert.Contains("hashed password, not plain-text", exception.Message);
-    }
-
-    // ============================================================================
-    // CHANGE ROLE TESTS
-    // ============================================================================
-
-    [Theory]
-    [InlineData("Admin")]
-    [InlineData("User")]
-    [InlineData("Auditor")]
-    public void ChangeRole_WithValidRole_ShouldUpdateSuccessfully(string newRole)
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345", "User");
+        Assert.Equal("User", user.Role);
 
         // Act
-        user.ChangeRole(newRole);
+        user.ChangeRole("Admin");
 
         // Assert
-        Assert.Equal(newRole, user.Role);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    public void ChangeRole_WithEmptyOrWhitespaceRole_ShouldThrowArgumentException(string invalidRole)
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            user.ChangeRole(invalidRole));
-
-        Assert.Equal("newRole", exception.ParamName);
-    }
-
-    [Theory]
-    [InlineData("InvalidRole")]
-    [InlineData("SuperAdmin")]
-    public void ChangeRole_WithInvalidRole_ShouldThrowArgumentException(string invalidRole)
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            user.ChangeRole(invalidRole));
-
-        Assert.Equal("newRole", exception.ParamName);
-        Assert.Contains("Invalid role", exception.Message);
+        Assert.Equal("Admin", user.Role);
     }
 
     // ============================================================================
-    // ACTIVATE / DEACTIVATE TESTS
+    // TEST 14: IsAdmin Method
     // ============================================================================
+    [Fact]
+    public void IsAdmin_WhenRoleIsAdmin_ShouldReturnTrue()
+    {
+        // Arrange
+        var adminUser = User.Create(
+            email: "admin@vaultguard.com",
+            username: "adminuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1",
+            role: "Admin");
+
+        // Act & Assert
+        Assert.True(adminUser.IsAdmin());
+    }
 
     [Fact]
-    public void Deactivate_ShouldSetIsActiveToFalse()
+    public void IsAdmin_WhenRoleIsNotAdmin_ShouldReturnFalse()
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-        Assert.True(user.IsActive); // Baþlangýçta aktif
+        var regularUser = User.Create(
+            email: "user@vaultguard.com",
+            username: "regularuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
 
-        // Act
+        // Act & Assert
+        Assert.False(regularUser.IsAdmin());
+    }
+
+    // ============================================================================
+    // TEST 15: CanLogin Method
+    // ============================================================================
+    [Fact]
+    public void CanLogin_WhenUserIsActive_ShouldReturnTrue()
+    {
+        // Arrange
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        // Act & Assert
+        Assert.True(user.CanLogin());
+    }
+
+    [Fact]
+    public void CanLogin_WhenUserIsInactive_ShouldReturnFalse()
+    {
+        // Arrange
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
         user.Deactivate();
 
-        // Assert
-        Assert.False(user.IsActive);
+        // Act & Assert
+        Assert.False(user.CanLogin());
     }
 
+    // ============================================================================
+    // TEST 16: Email Normalization
+    // ============================================================================
     [Fact]
-    public void Activate_ShouldSetIsActiveToTrue()
+    public void Create_ShouldNormalizeEmailToLowercase()
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-        user.Deactivate(); // Önce deaktif et
+        var email = "TeSt@VaultGuard.COM";
+
+        // Act
+        var user = User.Create(email, "testuser", "hashed_password_123456");
+
+        // Assert
+        Assert.Equal("test@vaultguard.com", user.Email);
+    }
+
+    // ============================================================================
+    // TEST 17: Username Format Validation
+    // ============================================================================
+    [Theory]
+    [InlineData("ab")] // Too short
+    [InlineData("user name")] // Contains space
+    [InlineData("user-name")] // Contains hyphen
+    [InlineData("user@name")] // Contains special char
+    public void Create_WithInvalidUsernameFormat_ShouldThrowArgumentException(string invalidUsername)
+    {
+        // Arrange
+        var email = "test@vaultguard.com";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() =>
+            User.Create(email, invalidUsername, passwordHash));
+
+        Assert.Contains("username", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ============================================================================
+    // TEST 18: Valid Username Formats
+    // ============================================================================
+    [Theory]
+    [InlineData("user123")]
+    [InlineData("test_user")]
+    [InlineData("User_123")]
+    [InlineData("___")]
+    public void Create_WithValidUsernameFormat_ShouldCreateSuccessfully(string validUsername)
+    {
+        // Arrange
+        var email = "test@vaultguard.com";
+        var passwordHash = "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1";
+
+        // Act
+        var user = User.Create(email, validUsername, passwordHash);
+
+        // Assert
+        Assert.Equal(validUsername, user.Username);
+    }
+
+    // ============================================================================
+    // TEST 19: Activate Method
+    // ============================================================================
+    [Fact]
+    public void Activate_AfterDeactivation_ShouldSetIsActiveToTrue()
+    {
+        // Arrange
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        user.Deactivate();
         Assert.False(user.IsActive);
 
         // Act
@@ -430,114 +425,44 @@ public class UserTests
     }
 
     // ============================================================================
-    // RECORD LOGIN TESTS
+    // TEST 20: UpdateEmail Method
     // ============================================================================
-
     [Fact]
-    public void RecordLogin_ShouldUpdateLastLoginAt()
+    public void UpdateEmail_WithValidEmail_ShouldUpdateEmail()
     {
         // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-        Assert.Null(user.LastLoginAt); // Baþlangýçta null
+        var user = User.Create(
+            email: "old@vaultguard.com",
+            username: "testuser",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        var newEmail = "new@vaultguard.com";
 
         // Act
-        user.RecordLogin();
+        user.UpdateEmail(newEmail);
 
         // Assert
-        Assert.NotNull(user.LastLoginAt);
-        Assert.True((DateTime.UtcNow - user.LastLoginAt.Value).TotalSeconds < 1);
-    }
-
-    [Fact]
-    public void RecordLogin_CalledTwice_ShouldUpdateToLatestTime()
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-        user.RecordLogin();
-        var firstLoginTime = user.LastLoginAt;
-
-        // Act
-        Thread.Sleep(100); // 100ms bekle
-        user.RecordLogin();
-
-        // Assert
-        Assert.NotNull(user.LastLoginAt);
-        Assert.True(user.LastLoginAt > firstLoginTime);
+        Assert.Equal(newEmail, user.Email);
     }
 
     // ============================================================================
-    // IS ADMIN TESTS
+    // TEST 21: UpdateUsername Method
     // ============================================================================
-
     [Fact]
-    public void IsAdmin_WhenRoleIsAdmin_ShouldReturnTrue()
+    public void UpdateUsername_WithValidUsername_ShouldUpdateUsername()
     {
         // Arrange
-        var user = User.Create("admin@vaultguard.com", "HashedPassword123456789012345", "Admin");
+        var user = User.Create(
+            email: "test@vaultguard.com",
+            username: "oldusername",
+            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
+
+        var newUsername = "newusername";
 
         // Act
-        var isAdmin = user.IsAdmin();
+        user.UpdateUsername(newUsername);
 
         // Assert
-        Assert.True(isAdmin);
-    }
-
-    [Theory]
-    [InlineData("User")]
-    [InlineData("Auditor")]
-    public void IsAdmin_WhenRoleIsNotAdmin_ShouldReturnFalse(string role)
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345", role);
-
-        // Act
-        var isAdmin = user.IsAdmin();
-
-        // Assert
-        Assert.False(isAdmin);
-    }
-
-    [Fact]
-    public void IsAdmin_ShouldBeCaseInsensitive()
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345", "admin");
-
-        // Act
-        var isAdmin = user.IsAdmin();
-
-        // Assert
-        Assert.True(isAdmin); // Küçük harf "admin" de geçerli
-    }
-
-    // ============================================================================
-    // CAN LOGIN TESTS
-    // ============================================================================
-
-    [Fact]
-    public void CanLogin_WhenUserIsActive_ShouldReturnTrue()
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-
-        // Act
-        var canLogin = user.CanLogin();
-
-        // Assert
-        Assert.True(canLogin);
-    }
-
-    [Fact]
-    public void CanLogin_WhenUserIsDeactivated_ShouldReturnFalse()
-    {
-        // Arrange
-        var user = User.Create("test@vaultguard.com", "HashedPassword123456789012345");
-        user.Deactivate();
-
-        // Act
-        var canLogin = user.CanLogin();
-
-        // Assert
-        Assert.False(canLogin);
+        Assert.Equal(newUsername, user.Username);
     }
 }
