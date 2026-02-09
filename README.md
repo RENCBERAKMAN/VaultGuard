@@ -10,11 +10,12 @@
 - **RESTful API:** Easily integrable with modern web and mobile applications.
 
 ## 🛠️ Technical Stack
-- **Backend:** .NET 8 / C#
-- **Database:** PostgreSQL
-- **Cache:** Redis
-- **Security:** JWT Authentication, RBAC (Role-Based Access Control)
-- **Deployment:** Docker & Docker Compose
+
+* Backend: .NET 9 / C# 13
+* Database: SQL Server (Production) / SQLite (Testing)
+* Architecture: Clean Architecture
+* Security: BCrypt Hashing & AES-256 Encryption
+
 
 ## 🏗️ Project Structure
 - `VaultGuard.Domain`: Core entities and interfaces.
