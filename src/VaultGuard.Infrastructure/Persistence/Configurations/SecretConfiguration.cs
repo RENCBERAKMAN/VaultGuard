@@ -55,8 +55,8 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
 
         builder.Property(s => s.Name)
             .IsRequired()
-            .HasMaxLength(200) // Secret için kullanıcı dostu etiket
-            .HasColumnType("nvarchar(200)");
+            .HasMaxLength(200);// Secret için kullanıcı dostu etiket
+            
 
         // GÜVENLİK: Name şifrelenmemiştir (aranabilirlik için plaintext)
         // Name ASLA hassas veri içermemelidir - sadece açıklayıcı etiket
@@ -71,8 +71,8 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
         // ============================================================================
 
         builder.Property(s => s.EncryptedData)
-            .IsRequired()
-            .HasColumnType("varbinary(max)"); // Binary veri (şifrelenmiş byte'lar)
+            .IsRequired();
+
 
         // GÜVENLİK: EncryptedData, AES-256 şifrelenmiş payload içerir
         // Şifreleme, domain logic'de gerçekleştirilir (Secret.Create)
@@ -87,8 +87,8 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
 
         builder.Property(s => s.IV)
             .IsRequired()
-            .HasMaxLength(16) // AES-256, 16-byte IV gerektirir
-            .HasColumnType("varbinary(16)");
+            .HasMaxLength(16); // AES-256, 16-byte IV gerektirir
+           
 
         // GÜVENLİK: IV (Initialization Vector) her şifreleme için benzersiz olmalı
         // Deşifre için şifreli verinin yanında saklanır
@@ -100,7 +100,7 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
 
         builder.Property(s => s.CreatedAt)
             .IsRequired()
-            .HasColumnType("datetime2(7)")
+            
             .HasDefaultValueSql("GETUTCDATE()");
 
         // ============================================================================
@@ -108,8 +108,8 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
         // ============================================================================
 
         builder.Property(s => s.LastAccessedAt)
-            .IsRequired(false)
-            .HasColumnType("datetime2(7)");
+            .IsRequired(false);
+           
 
         // GÜVENLİK: LastAccessedAt, denetim izi için kritiktir
         // Kullanılmayan/eski secret'ların tespitini sağlar
@@ -125,13 +125,13 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
             .HasDefaultValue(false);
 
         builder.Property(s => s.DeletedAt)
-            .IsRequired(false)
-            .HasColumnType("datetime2(7)");
+            .IsRequired(false);
+            
 
         // GÜVENLİK: Soft-delete edilmiş secret'lar için index
         builder.HasIndex(s => s.IsDeleted)
             .HasDatabaseName("IX_Secrets_IsDeleted")
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("IsDeleted = 0");
 
         // GLOBAL QUERY FILTER: Soft-delete edilmiş secret'ları otomatik olarak çıkarır
         // Admin kurtarma senaryoları için .IgnoreQueryFilters() kullanın
@@ -148,7 +148,7 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
         // Optimize eder: "X kullanıcısının tüm aktif secret'larını göster"
         builder.HasIndex(s => new { s.OwnerId, s.IsDeleted })
             .HasDatabaseName("IX_Secrets_Owner_NotDeleted")
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("IsDeleted = 0");
 
         // PERFORMANS: Secret arama için composite index
         // Optimize eder: "X kullanıcısı için ada göre secret ara"

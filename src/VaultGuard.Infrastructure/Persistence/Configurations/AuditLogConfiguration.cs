@@ -56,8 +56,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         builder.Property(a => a.Action)
             .IsRequired()
-            .HasMaxLength(100) // "Secret_Viewed", "User_Login_Failed" gibi
-            .HasColumnType("nvarchar(100)");
+            .HasMaxLength(100); // "Secret_Viewed", "User_Login_Failed" gibi
+            
 
         // GÜVENLİK: Action alanı üzerinde index, güvenlik olay toplamlaması için gerekli
         // Hızlı sorgular sağlar: "Son 1 saatte tüm başarısız login denemelerini göster"
@@ -70,8 +70,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         builder.Property(a => a.EntityName)
             .IsRequired()
-            .HasMaxLength(50) // "User", "Secret", "System"
-            .HasColumnType("nvarchar(50)");
+            .HasMaxLength(50); // "User", "Secret", "System"
+            
 
         builder.Property(a => a.EntityId)
             .IsRequired(false); // Sistem seviyesi olaylar için nullable
@@ -86,9 +86,9 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         // ============================================================================
 
         builder.Property(a => a.Timestamp)
-            .IsRequired()
-            .HasColumnType("datetime2(7)") // Forensic incelemeler için mikrosaniye hassasiyeti
-            .HasDefaultValueSql("GETUTCDATE()");
+            .IsRequired();
+             // Forensic incelemeler için mikrosaniye hassasiyeti
+            
 
         // GÜVENLİK: Timestamp üzerinde index, zamana dayalı sorgular için kritik
         // Hayati önem taşır: "Son 24 saatteki tüm olayları göster" (olay müdahalesi)
@@ -102,8 +102,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         builder.Property(a => a.IpAddress)
             .IsRequired()
-            .HasMaxLength(45) // IPv6 maksimum uzunluk
-            .HasColumnType("varchar(45)"); // Sadece ASCII karakterler, varchar yeterli
+            .HasMaxLength(45); // IPv6 maksimum uzunluk
+            
 
         // GÜVENLİK: IpAddress üzerinde index, tehdit tespiti için gerekli
         // Sorgular sağlar: "Bu şüpheli IP'den gelen tüm işlemleri göster"
@@ -115,8 +115,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         // ============================================================================
 
         builder.Property(a => a.Details)
-            .IsRequired(false)
-            .HasColumnType("nvarchar(max)"); // JSON payload'ları için büyük metin alanı
+            .IsRequired(false);
+             // JSON payload'ları için büyük metin alanı
 
         // GÜVENLİK UYARISI: Details alanı ASLA hassas veri içermemelidir (şifre, secret, token)
         // Bu, domain logic'de doğrulanır (AuditLog.Create), ancak dikkatli olun
@@ -138,7 +138,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         // Optimize eder: "Son 1 saatte bu IP'den gelen tüm başarısız login denemelerini göster"
         builder.HasIndex(a => new { a.Action, a.IpAddress, a.Timestamp })
             .HasDatabaseName("IX_AuditLogs_Action_IpAddress_Timestamp")
-            .HasFilter("[Action] LIKE '%Failed%' OR [Action] LIKE '%Error%'"); // Partial index
+            .HasFilter("Action LIKE '%Failed%' OR [Action] LIKE '%Error%'"); // Partial index
 
         // GÜVENLİK: Entity değişiklik takibi için composite index
         // Optimize eder: "Belirli bir entity'nin tam geçmişini göster"

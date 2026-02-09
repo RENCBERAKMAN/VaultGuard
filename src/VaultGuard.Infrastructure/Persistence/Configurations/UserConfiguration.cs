@@ -37,8 +37,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Email)
             .IsRequired()
-            .HasMaxLength(256) // RFC 5321 standardı max 254 karakter öngörür, 256 ek buffer sağlar
-            .HasColumnType("nvarchar(256)");
+            .HasMaxLength(256); // RFC 5321 standardı max 254 karakter öngörür, 256 ek buffer sağlar
+            
 
         // GÜVENLİK: Unique constraint, aynı email ile birden fazla hesap oluşturulmasını engeller
         // ve account enumeration (hesap numaralandırma) saldırılarına karşı koruma sağlar
@@ -57,8 +57,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Username)
             .IsRequired()
-            .HasMaxLength(50)
-            .HasColumnType("nvarchar(50)");
+            .HasMaxLength(50);
+            
 
         // GÜVENLİK: Benzersiz kullanıcı adları, hesap karmaşasını ve kimlik doğrulama saldırılarını önler
         builder.HasIndex(u => u.Username)
@@ -71,8 +71,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.PasswordHash)
             .IsRequired()
-            .HasMaxLength(512) // BCrypt/Argon2 hash'leri tipik olarak 60-100 karakter, 512 ek alan sağlar
-            .HasColumnType("nvarchar(512)");
+            .HasMaxLength(512); // BCrypt/Argon2 hash'leri tipik olarak 60-100 karakter, 512 ek alan sağlar
+            
 
         // GÜVENLİK NOTU: Şifreler asla düz metin (plain-text) olarak saklanmaz, sadece hash'lenmiş halleri
         // Hash uzunluğu 512 karakter olarak ayarlandı çünkü farklı algoritmalar desteklenir (BCrypt, Argon2, PBKDF2)
@@ -85,7 +85,6 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Role)
             .IsRequired()
             .HasMaxLength(20) // "Admin", "User", "Auditor" - 20 karakter yeterli
-            .HasColumnType("nvarchar(20)")
             .HasDefaultValue("User");
 
         // PERFORMANS: Rol bazlı filtreleme çok yaygındır - RBAC (Role-Based Access Control) sorguları için indexlendi
@@ -104,7 +103,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // Pasif hesapların authentication sorgularında görünmemesini garanti eder
         builder.HasIndex(u => u.IsActive)
             .HasDatabaseName("IX_Users_IsActive")
-            .HasFilter("[IsActive] = 1"); // Partial index - sadece aktif kullanıcılar
+            .HasFilter("IsActive = 1"); // Partial index - sadece aktif kullanıcılar
 
         // ============================================================================
         // ZAMAN DAMGALARI (TIMESTAMPS)
@@ -112,7 +111,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.CreatedAt)
             .IsRequired()
-            .HasColumnType("datetime2(7)") // Yüksek hassasiyet denetim izleri (audit trail) için
+             
             .HasDefaultValueSql("GETUTCDATE()");
 
         builder.Property(u => u.LastLoginAt)
@@ -152,13 +151,13 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // Optimize eder: SELECT * FROM Users WHERE Email = @email AND IsActive = 1
         builder.HasIndex(u => new { u.Email, u.IsActive })
             .HasDatabaseName("IX_Users_Email_IsActive")
-            .HasFilter("[IsActive] = 1");
+            .HasFilter("IsActive = 1");
 
         // GÜVENLİK: Rol bazlı erişim kontrolü için composite index (Role + IsActive)
         // Optimize eder: SELECT * FROM Users WHERE Role = @role AND IsActive = 1
         builder.HasIndex(u => new { u.Role, u.IsActive })
             .HasDatabaseName("IX_Users_Role_IsActive")
-            .HasFilter("[IsActive] = 1");
+            .HasFilter("IsActive = 1");
 
         // ============================================================================
         // İLİŞKİLER (RELATIONSHIPS)
