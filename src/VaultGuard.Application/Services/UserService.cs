@@ -77,6 +77,10 @@ public class UserService : IUserService
                 data: userDto,
                 message: "Kullanıcı başarıyla getirildi.");
         }
+        catch (OperationCanceledException)
+        {
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+        }
         catch (Exception ex)
         {
             return new ErrorDataResult<UserDto>(
@@ -98,6 +102,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(email))
             {
                 return new ErrorDataResult<UserDto>(
@@ -116,6 +121,13 @@ public class UserService : IUserService
             return new SuccessDataResult<UserDto>(
                 data: userDto,
                 message: "Kullanıcı başarıyla getirildi.");
+        }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
         }
         catch (Exception ex)
         {
@@ -162,6 +174,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // 1. Validasyon (Paket içeriği kontrol ediliyor)
             if (string.IsNullOrWhiteSpace(createUserDto.Email))
             {
@@ -209,6 +222,13 @@ public class UserService : IUserService
                 data: userDto,
                 message: "Kullanıcı başarıyla oluşturuldu.");
         }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
+        }
         catch (ArgumentException ex)
         {
             // Domain katmanından gelen kural ihlalleri
@@ -241,6 +261,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // 1. Kullanıcıyı getir (DTO içindeki ID üzerinden)
             var user = await _userRepository.GetByIdAsync(updateUserDto.Id, cancellationToken);
 
@@ -285,6 +306,13 @@ public class UserService : IUserService
                 data: userDto,
                 message: "Kullanıcı bilgileri başarıyla güncellendi.");
         }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
+        }
         catch (ArgumentException ex)
         {
             // Domain entity içindeki validasyon kuralları ihlal edilirse (Örn: geçersiz format)
@@ -319,6 +347,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // 1. Kullanıcıyı getir (Repository üzerinden)
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
 
@@ -346,6 +375,13 @@ public class UserService : IUserService
 
             return new SuccessResult(message: "Şifreniz başarıyla değiştirildi.");
         }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
+        }
         catch (ArgumentException ex)
         {
             // Domain katmanındaki şifre politikası ihlalleri
@@ -372,6 +408,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
             {
@@ -388,6 +425,13 @@ public class UserService : IUserService
             return new SuccessDataResult<UserDto>(
                 data: userDto,
                 message: "Kullanıcı rolü başarıyla değiştirildi.");
+        }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
         }
         catch (ArgumentException ex)
         {
@@ -413,6 +457,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
             {
@@ -425,6 +470,13 @@ public class UserService : IUserService
             await _userRepository.SaveChangesAsync(cancellationToken);
 
             return new SuccessResult(message: "Kullanıcı başarıyla deaktive edildi.");
+        }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
         }
         catch (Exception ex)
         {
@@ -446,6 +498,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var users = await _userRepository.GetAllAsync(cancellationToken);
 
             // Entity listesini tek tek DTO'ya mapliyoruz.
@@ -454,6 +507,13 @@ public class UserService : IUserService
             return new SuccessDataResult<List<UserDto>>(
                 data: userDtos,
                 message: "Tüm kullanıcılar başarıyla listelendi.");
+        }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
         }
         catch (Exception ex)
         {
@@ -473,6 +533,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
 
             if (user == null)
@@ -484,6 +545,13 @@ public class UserService : IUserService
             await _userRepository.SaveChangesAsync(cancellationToken);
 
             return new SuccessResult(message: "Kullanıcı sistemden kalıcı olarak silindi.");
+        }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
         }
         catch (Exception ex)
         {
@@ -500,6 +568,7 @@ public class UserService : IUserService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
             {
@@ -512,6 +581,13 @@ public class UserService : IUserService
             await _userRepository.SaveChangesAsync(cancellationToken);
 
             return new SuccessResult(message: "Kullanıcı başarıyla aktive edildi.");
+        }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
         }
         catch (Exception ex)
         {
