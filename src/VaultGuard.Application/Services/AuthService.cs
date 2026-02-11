@@ -88,53 +88,45 @@ public class AuthService : IAuthService
     /// - Password Hashing: Şifreler asla düz metin olarak işlenmez.
     /// </summary>
     public async Task<IDataResult<TokenDto>> RegisterAsync(
-        RegisterDto registerDto,
-        CancellationToken cancellationToken = default)
+      RegisterDto registerDto,
+      CancellationToken cancellationToken = default)
     {
         try
         {
-            // 1. Temel validasyon (Veri paketi içeriği kontrolü)
-            if (string.IsNullOrWhiteSpace(registerDto.Email) ||
+            cancellationToken.ThrowIfCancellationRequested();
+            // 1. Temel Validasyon
+            if (registerDto == null ||
+                string.IsNullOrWhiteSpace(registerDto.Email) ||
                 string.IsNullOrWhiteSpace(registerDto.Username) ||
                 string.IsNullOrWhiteSpace(registerDto.Password))
             {
                 return new ErrorDataResult<TokenDto>(message: "Gerekli tüm alanları doldurunuz.");
             }
 
-            // 2. Email benzersizlik kontrolü (Siber Güvenlik: Generic Mesaj)
+            // 2. Email ve Username Benzersizlik Kontrolü (Güvenlik İçin Generic Mesaj)
             var emailExists = await _userRepository.ExistsByEmailAsync(registerDto.Email, cancellationToken);
-            if (emailExists)
-            {
-                // GÜVENLİK: "Email zaten var" demiyoruz, saldırganın bilgi toplamasını engelliyoruz.
-                return new ErrorDataResult<TokenDto>(message: "Kayıt işlemi başarısız oldu. Lütfen bilgilerinizi kontrol edin.");
-            }
-
-            // 3. Username benzersizlik kontrolü (Siber Güvenlik: Generic Mesaj)
             var usernameExists = await _userRepository.ExistsByUsernameAsync(registerDto.Username, cancellationToken);
-            if (usernameExists)
+
+            if (emailExists || usernameExists)
             {
+                // GÜVENLİK: Saldırganın hangi bilginin hatalı olduğunu anlamasını engelliyoruz.
                 return new ErrorDataResult<TokenDto>(message: "Kayıt işlemi başarısız oldu. Lütfen bilgilerinizi kontrol edin.");
             }
 
-            // 4. Şifreyi hash'le (IPasswordHasher üzerinden)
+            // 3. Şifreleme ve Entity Oluşturma
             var passwordHash = _passwordHasher.HashPassword(registerDto.Password);
 
-            // 5. Domain entity oluştur (İş kuralları Domain katmanında işletilir)
             var user = User.Create(
                 email: registerDto.Email,
                 username: registerDto.Username,
                 passwordHash: passwordHash,
                 role: "User");
 
-            // 6. Veritabanına kaydet
+            // 4. Kalıcı Kayıt
             await _userRepository.AddAsync(user, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
 
-            // --------------------------------------------------------------------
-            // 7. BÜYÜK FİNAL: TOKEN ÜRETİMİ (Hata buradaydı, düzeltildi)
-            // --------------------------------------------------------------------
-            // Profesyonel sistemlerde kayıt olan kullanıcıya direkt Token verilir.
-            // Gerçek JWT üretimi ileride Infrastructure katmanında yapılacak.
+            // 5. Token Üretimi
             var tokenDto = new TokenDto
             {
                 AccessToken = "VaultGuard_Initial_Access_Token_" + Guid.NewGuid().ToString("N"),
@@ -143,16 +135,18 @@ public class AuthService : IAuthService
 
             return new SuccessDataResult<TokenDto>(
                 data: tokenDto,
-                message: "Kayıt başarıyla tamamlandı ve oturum açıldı.");
+                message: "Kayıt başarıyla tamamlandı.");
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
         }
         catch (ArgumentException ex)
         {
-            // Domain katmanından gelen kural ihlalleri (Örn: geçersiz email formatı)
             return new ErrorDataResult<TokenDto>(message: $"Kayıt başarısız: {ex.Message}");
         }
         catch (Exception)
         {
-            // Beklenmeyen teknik hataları dışarı sızdırmadan genel hata dönüyoruz.
             return new ErrorDataResult<TokenDto>(message: "Kayıt sırasında teknik bir hata oluştu.");
         }
     }
@@ -188,6 +182,7 @@ public class AuthService : IAuthService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(loginDto.Email) || string.IsNullOrWhiteSpace(loginDto.Password))
             {
                 return new ErrorDataResult<TokenDto>("Email ve şifre alanları boş olamaz.");
@@ -210,6 +205,13 @@ public class AuthService : IAuthService
 
             return new SuccessDataResult<TokenDto>(tokenDto, "Giriş başarılı.");
         }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
+        }
         catch (Exception)
         {
             return new ErrorDataResult<TokenDto>("Giriş sırasında bir hata oluştu.");
@@ -229,6 +231,8 @@ public class AuthService : IAuthService
     {
         try
         {
+
+            cancellationToken.ThrowIfCancellationRequested();
             // 1. Temel validasyon
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
@@ -275,6 +279,13 @@ public class AuthService : IAuthService
                 data: userDto,
                 message: "Giriş başarılı.");
         }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
+        }
         catch (Exception)
         {
             return new ErrorDataResult<UserDto>(
@@ -304,6 +315,7 @@ public class AuthService : IAuthService
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(password))
             {
                 return new ErrorResult(message: "Şifre boş olamaz.");
@@ -324,6 +336,13 @@ public class AuthService : IAuthService
 
             return new SuccessResult(message: "Şifre doğrulandı.");
         }
+        catch (OperationCanceledException)
+
+        {
+
+            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
+
+        }
         catch (Exception)
         {
             return new ErrorResult(
@@ -336,16 +355,52 @@ public class AuthService : IAuthService
 
     public async Task<IDataResult<TokenDto>> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask;
-        // Altyapı (Infrastructure) hazır olduğunda burayı dolduracağız.
-        return new SuccessDataResult<TokenDto>(new TokenDto { AccessToken = "Yeni_Token" }, "Token yenilendi.");
+        try
+        {
+            // 1. İptal kontrolü
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await Task.CompletedTask;
+
+            // Gelecekte buraya gerçek refresh token mantığı gelecek.
+            return new SuccessDataResult<TokenDto>(
+                data: new TokenDto { AccessToken = "Yeni_Token" },
+                message: "Token yenilendi.");
+        }
+        catch (OperationCanceledException)
+        {
+            // 2. İptal hatasını dışarı fırlat (Test için kritik)
+            throw;
+        }
+        catch (Exception)
+        {
+            // 3. Genel hata yönetimi
+            return new ErrorDataResult<TokenDto>(message: "Token yenileme işlemi başarısız oldu.");
+        }
     }
 
     public async Task<IResult> RevokeAllTokensAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask;
-        // Kullanıcının tüm oturumlarını kapatma mantığı.
-        return new SuccessResult("Tüm oturumlar başarıyla kapatıldı.");
+        try
+        {
+            // 1. İptal kontrolü (Standardımız)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await Task.CompletedTask;
+
+            // İleride burada kullanıcının tüm Refresh Token'larını veritabanından sileceğiz.
+            return new SuccessResult("Tüm oturumlar başarıyla kapatıldı.");
+        }
+        catch (OperationCanceledException)
+        {
+            // 2. Hatayı fırlat ki testler "Neden hata gelmedi?" demesin
+            throw;
+        }
+        catch (Exception)
+        {
+            // 3. Genel hata yönetimi
+            return new ErrorResult("Oturumlar kapatılırken bir hata oluştu.");
+        }
     }
     // ============================================================================
     // DTO MAPPING (MANUAL - NO AUTOMAPPER)
