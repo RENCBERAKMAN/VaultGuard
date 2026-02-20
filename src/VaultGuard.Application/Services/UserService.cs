@@ -256,66 +256,63 @@ public class UserService : IUserService
     /// - Email ve Username benzersizlik kontrolleri Repository seviyesinde yapılır.
     /// </summary>
     public async Task<IDataResult<UserDto>> UpdateAsync(
-        UpdateUserDto updateUserDto, // Parametre artık bir paket (DTO) olarak geliyor
-        CancellationToken cancellationToken = default)
+    Guid userId, // 1. DEĞİŞİKLİK: ID artık dışarıdan bağımsız geliyor
+    UpdateUserDto updateUserDto,
+    CancellationToken cancellationToken = default)
     {
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            // 1. Kullanıcıyı getir (DTO içindeki ID üzerinden)
-            var user = await _userRepository.GetByIdAsync(updateUserDto.Id, cancellationToken);
+
+            // 2. DEĞİŞİKLİK: Artık updateUserDto.Id yerine direkt userId kullanıyoruz.
+            // Bu çok daha güvenli! Kullanıcı DTO içindeki Id'yi değiştirse bile 
+            // biz token'dan gelen gerçek ID ile işlem yapıyoruz.
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
 
             if (user == null)
             {
                 return new ErrorDataResult<UserDto>(message: "Kullanıcı bulunamadı.");
             }
 
-            // 2. Email güncelleme (Eğer yeni bir email gelmişse ve mevcut olandan farklıysa)
+            // 3. Email güncelleme kontrolü
             if (!string.IsNullOrWhiteSpace(updateUserDto.Email) && updateUserDto.Email != user.Email)
             {
-                // Yeni email başka bir kullanıcıda var mı kontrolü
                 var emailExists = await _userRepository.ExistsByEmailAsync(updateUserDto.Email, cancellationToken);
                 if (emailExists)
                 {
                     return new ErrorDataResult<UserDto>(message: "Bu email adresi zaten başka bir kullanıcı tarafından kullanılıyor.");
                 }
-
                 user.UpdateEmail(updateUserDto.Email);
             }
 
-            // 3. Username güncelleme (Eğer yeni bir kullanıcı adı gelmişse ve farklıysa)
+            // 4. Username güncelleme kontrolü
             if (!string.IsNullOrWhiteSpace(updateUserDto.Username) && updateUserDto.Username != user.Username)
             {
-                // Yeni kullanıcı adı sistemde var mı kontrolü
                 var usernameExists = await _userRepository.ExistsByUsernameAsync(updateUserDto.Username, cancellationToken);
                 if (usernameExists)
                 {
                     return new ErrorDataResult<UserDto>(message: "Bu kullanıcı adı zaten alınmış.");
                 }
-
                 user.UpdateUsername(updateUserDto.Username);
             }
 
-            // 4. Değişiklikleri Repository üzerinden işaretle ve kaydet
+            // Profil bilgilerini güncelle
+            user.UpdateProfile(updateUserDto.FirstName, updateUserDto.LastName, updateUserDto.PhoneNumber);
+
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync(cancellationToken);
 
-            // 5. Güncel entity'yi DTO'ya çevirip başarıyla dön
             var userDto = ToDto(user);
             return new SuccessDataResult<UserDto>(
                 data: userDto,
                 message: "Kullanıcı bilgileri başarıyla güncellendi.");
         }
         catch (OperationCanceledException)
-
         {
-
-            throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
-
+            throw;
         }
         catch (ArgumentException ex)
         {
-            // Domain entity içindeki validasyon kuralları ihlal edilirse (Örn: geçersiz format)
             return new ErrorDataResult<UserDto>(message: $"Validasyon hatası: {ex.Message}");
         }
         catch (Exception ex)
@@ -356,9 +353,10 @@ public class UserService : IUserService
                 return new ErrorResult(message: "Kullanıcı bulunamadı.");
             }
 
+          
             // 2. Mevcut şifreyi doğrula (Paket içindeki CurrentPassword kullanılıyor)
             // Veritabanındaki hash ile kullanıcının girdiği şifre karşılaştırılır.
-            if (!_passwordHasher.VerifyPassword(changePasswordDto.CurrentPassword, user.PasswordHash))
+            if (!_passwordHasher.VerifyPassword(changePasswordDto.CurrentPassword, user.PasswordHash)) // <-- Burayı CurrentPassword yaptın
             {
                 return new ErrorResult(message: "Mevcut şifreniz hatalı.");
             }
@@ -595,7 +593,45 @@ public class UserService : IUserService
                 message: $"Kullanıcı aktive edilirken bir hata oluştu: {ex.Message}");
         }
     }
+   
+    public async Task<IDataResult<UserDto>> UpdateProfileAsync(Guid userId, string firstName, string lastName, string phoneNumber, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user == null) return new ErrorDataResult<UserDto>("Kullanıcı bulunamadı.");
 
+        // Domain entity üzerindeki metodu kullanıyoruz
+        user.UpdateProfile(firstName, lastName, phoneNumber);
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return new SuccessDataResult<UserDto>(ToDto(user), "Profil güncellendi.");
+    }
+
+    public async Task<IResult> LogoutAllDevicesAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user == null) return new ErrorResult("Kullanıcı bulunamadı.");
+
+        // SecurityStamp değiştirmek, eski tokenları geçersiz kılar
+        user.UpdateSecurityStamp(); // ✅ DOĞRU: User sınıfının kendi içindeki metodu çağırıyoruz.
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return new SuccessResult("Tüm cihazlardan çıkış yapıldı.");
+    }
+
+    // Testlerin aradığı wrapper metod (String ID alır, Guid'e çevirir)
+    public async Task<IDataResult<UserDto>> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        
+        return await GetByIdAsync(userId, cancellationToken);
+    }
+
+    // ============================================================================
+    // 👆 EKLEME BİTTİ 👆
+    // ============================================================================
 
     // ============================================================================
     // DTO MAPPING (MANUAL - NO AUTOMAPPER)
@@ -615,11 +651,13 @@ public class UserService : IUserService
             Id = user.Id,
             Email = user.Email,
             Username = user.Username,
+            FirstName = user.FirstName, // BU SATIRI EKLE
+            LastName = user.LastName,   // BU SATIRI EKLE
+            PhoneNumber = user.PhoneNumber, // BU SATIRI EKLE
             Role = user.Role,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
             LastLoginAt = user.LastLoginAt
-            // PasswordHash ASLA eklenmez!
         };
     }
 }

@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultGuard.Infrastructure.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultGuard.Application.Tests", "tests\VaultGuard.Application.Tests\VaultGuard.Application.Tests.csproj", "{FE7B9454-22E0-4445-8A8B-B7099D06781C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultGuard.WebAPI.Tests", "tests\VaultGuard.WebAPI.Tests\VaultGuard.WebAPI.Tests.csproj", "{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,18 @@ Global
 		{FE7B9454-22E0-4445-8A8B-B7099D06781C}.Release|x64.Build.0 = Release|Any CPU
 		{FE7B9454-22E0-4445-8A8B-B7099D06781C}.Release|x86.ActiveCfg = Release|Any CPU
 		{FE7B9454-22E0-4445-8A8B-B7099D06781C}.Release|x86.Build.0 = Release|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Debug|x64.Build.0 = Debug|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Debug|x86.Build.0 = Debug|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Release|x64.ActiveCfg = Release|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Release|x64.Build.0 = Release|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Release|x86.ActiveCfg = Release|Any CPU
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,5 +141,6 @@ Global
 		{AB530522-7306-4E07-A27D-61199BC68630} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{FBB5B346-97B1-473C-A2D0-59894E5D1BAB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{FE7B9454-22E0-4445-8A8B-B7099D06781C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{0F75A2CF-5E76-4D09-9F91-4169FB36A0FA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

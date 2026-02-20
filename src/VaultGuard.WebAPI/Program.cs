@@ -1,101 +1,88 @@
-﻿using Microsoft.EntityFrameworkCore;
-using VaultGuard.Infrastructure.Persistence;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using VaultGuard.WebAPI.Middleware;
+using VaultGuard.WebAPI.Extensions;
+using VaultGuard.Infrastructure.Persistence; // Migration ve DbContext için
+using Microsoft.EntityFrameworkCore; // Migrate() metodu için gerekli
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
+// ============================================
+// 1. SERVICES REGISTRATION (DI Katmanı)
+// ============================================
+// Profesyonel Dokunuş: Tüm karmaşık ayarları Extension dosyalarımızdan çekiyoruz.
+// Böylece Program.cs tertemiz kalıyor ve hata yapma riskimiz sıfıra iniyor.
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Auth, User ve Token servislerini yükler
+builder.Services.AddApplicationServices();
 
-builder.Services.AddDbContext<VaultGuardDbContext>(options =>
-{
-    options.UseSqlServer(connectionString, sqlOptions =>
-    {
-        sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-        sqlOptions.MigrationsAssembly("VaultGuard.Infrastructure");
-        sqlOptions.CommandTimeout(30);
-        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
-    });
+// Veritabanı, JWT, Hashleme ve Şifreleme (AES) servislerini yükler
+// SQL Connection String ayarı burada otomatik yapılır!
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
-    if (builder.Environment.IsDevelopment())
-    {
-        options.EnableSensitiveDataLogging();
-        options.EnableDetailedErrors();
-    }
-});
+// CORS Politikalarını yükler ("VaultGuardPolicy")
+builder.Services.AddCorsPolicy();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        }
-        else
-        {
-            policy.WithOrigins("https://yourdomain.com")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        }
-    });
-});
+// Sağlık kontrolü servislerini yükler
+builder.Services.AddHealthChecks(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddHealthChecks();
+builder.Services.AddSwaggerGen(); // Temel Swagger
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
+// ============================================
+// 2. MIDDLEWARE PIPELINE (Sıralama Kritik!)
+// ============================================
 
+// 1. Adım: Gelen isteği logla (RequestLoggingMiddleware)
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+// 2. Adım: Hataları yakala ve gizle (GlobalExceptionMiddleware)
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Development ortamındaysak Swagger'ı aç
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
+
+// CORS Politikası: DependencyInjection.cs içinde tanımladığımız isimle aynı olmalı
+app.UseCors("VaultGuardPolicy");
+
+// Kimlik ve Yetki
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Endpoint'leri eşle
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-if (app.Environment.IsDevelopment())
+// ============================================
+// 3. OTOMATİK VERİTABANI MIGRATION
+// ============================================
+// Uygulama her başladığında veritabanı yoksa oluşturur, varsa günceller.
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<VaultGuardDbContext>();
+    var services = scope.ServiceProvider;
     try
     {
-        await dbContext.Database.MigrateAsync();
-        app.Logger.LogInformation("✅ Database migration completed.");
+        var context = services.GetRequiredService<VaultGuardDbContext>();
+        context.Database.Migrate(); // Sihirli komut: Update-Database işlemini otomatik yapar
     }
     catch (Exception ex)
     {
-        app.Logger.LogError(ex, "❌ Migration failed.");
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Kritik Hata: Veritabanı migration işlemi yapılamadı.");
     }
 }
 
-app.MapGet("/api/ping", () => Results.Ok(new { Message = "VaultGuard API running 🛡️", Timestamp = DateTime.UtcNow }));
-
-app.MapGet("/api/db-test", async (VaultGuardDbContext dbContext) =>
-{
-    try
-    {
-        var canConnect = await dbContext.Database.CanConnectAsync();
-        return Results.Ok(new { DatabaseConnected = canConnect, Message = canConnect ? "✅ Database OK" : "❌ Database failed" });
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.Message);
-    }
-});
-
 app.Run();
+
+// ============================================
+// 4. TEST ROBOTU İÇİN GİRİŞ KAPISI
+// ============================================
+// Bu satır sayesinde Integration Test projesi API'yi ayağa kaldırabilir.
+public partial class Program { }

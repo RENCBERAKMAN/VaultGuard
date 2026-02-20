@@ -21,6 +21,15 @@ public interface IUserService
     /// <returns>Kullanıcı bulunduysa UserDto, yoksa hata</returns>
     Task<IDataResult<UserDto>> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    // Profil güncelleme
+    Task<IDataResult<UserDto>> UpdateProfileAsync(Guid userId, string firstName, string lastName, string phoneNumber, CancellationToken cancellationToken);
+
+    // Tüm cihazlardan çıkış (Security Stamp günceller)
+    Task<IResult> LogoutAllDevicesAsync(Guid userId, CancellationToken cancellationToken);
+
+    // Test "GetUserProfileAsync" diye arıyor, bu aslında GetByIdAsync ile aynı işi yapar.
+    // İsim karışıklığını önlemek için bunu da ekleyelim (Wrapper olarak çalışacak)
+    Task<IDataResult<UserDto>> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken);
     /// <summary>
     /// Email ile kullanıcı getirir.
     /// Public API'de kullanılmamalı - user enumeration riski.
@@ -53,7 +62,7 @@ public interface IUserService
     /// <param name="updateUserDto">Güncellenecek bilgiler</param>
     /// <param name="cancellationToken">İptal token</param>
     /// <returns>Güncellenmiş kullanıcı</returns>
-    Task<IDataResult<UserDto>> UpdateAsync(UpdateUserDto updateUserDto, CancellationToken cancellationToken = default);
+    Task<IDataResult<UserDto>> UpdateAsync(Guid userId, UpdateUserDto updateUserDto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Kullanıcı şifresini değiştirir.

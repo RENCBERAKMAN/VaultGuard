@@ -402,6 +402,31 @@ public class AuthService : IAuthService
             return new ErrorResult("Oturumlar kapatılırken bir hata oluştu.");
         }
     }
+    public async Task<IResult> LogoutAsync(
+    string userId,
+    CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Şimdilik gerçek token revoke işlemi yok.
+            // İleride refresh token repository bağlanabilir.
+
+            await Task.CompletedTask;
+
+            return new SuccessResult("Çıkış başarılı.");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return new ErrorResult("Çıkış sırasında bir hata oluştu.");
+        }
+    }
+
     // ============================================================================
     // DTO MAPPING (MANUAL - NO AUTOMAPPER)
     // ============================================================================
