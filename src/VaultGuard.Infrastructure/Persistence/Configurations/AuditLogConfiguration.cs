@@ -114,10 +114,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         // DETAILS (DETAYLAR) YAPILANDIRMASI
         // ============================================================================
 
-        builder.Property(a => a.Details)
-            .IsRequired(false);
-             // JSON payload'ları için büyük metin alanı
-
+        builder.Property(a => a.AdditionalData) // Details yerine AdditionalData
+      .IsRequired(false);
         // GÜVENLİK UYARISI: Details alanı ASLA hassas veri içermemelidir (şifre, secret, token)
         // Bu, domain logic'de doğrulanır (AuditLog.Create), ancak dikkatli olun
 

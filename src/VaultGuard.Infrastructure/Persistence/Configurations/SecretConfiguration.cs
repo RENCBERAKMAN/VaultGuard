@@ -37,13 +37,11 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
         // OWNER ID (SAHİP ID) YAPILANDIRMASI - FOREIGN KEY
         // ============================================================================
 
-        builder.Property(s => s.OwnerId)
-            .IsRequired();
+        builder.Property(s => s.UserId) // OwnerId yerine UserId
+     .IsRequired();
 
-        // GÜVENLİK: OwnerId üzerinde index, kullanıcı secret sorgularını hızlandırır
-        // Optimize eder: "X kullanıcısına ait tüm secret'ları göster"
-        builder.HasIndex(s => s.OwnerId)
-            .HasDatabaseName("IX_Secrets_OwnerId");
+        builder.HasIndex(s => s.UserId)
+            .HasDatabaseName("IX_Secrets_UserId");
 
         // User ile foreign key ilişkisi (one-to-many)
         // Döngüsel referansı önlemek için UserConfiguration'da tanımlandı
@@ -53,25 +51,19 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
         // NAME (AD) YAPILANDIRMASI
         // ============================================================================
 
-        builder.Property(s => s.Name)
-            .IsRequired()
-            .HasMaxLength(200);// Secret için kullanıcı dostu etiket
-            
+        builder.Property(s => s.Title) // Name yerine Title
+    .IsRequired()
+    .HasMaxLength(200);
 
-        // GÜVENLİK: Name şifrelenmemiştir (aranabilirlik için plaintext)
-        // Name ASLA hassas veri içermemelidir - sadece açıklayıcı etiket
-        // Örnek: "AWS Production API Key" (asıl key değil)
-
-        // PERFORMANS: Arama sorguları için Name üzerinde index
-        builder.HasIndex(s => s.Name)
-            .HasDatabaseName("IX_Secrets_Name");
+        builder.HasIndex(s => s.Title)
+            .HasDatabaseName("IX_Secrets_Title");
 
         // ============================================================================
         // ENCRYPTED DATA (ŞİFRELİ VERİ) YAPILANDIRMASI
         // ============================================================================
 
-        builder.Property(s => s.EncryptedData)
-            .IsRequired();
+        builder.Property(s => s.EncryptedValue) // EncryptedData yerine EncryptedValue
+     .IsRequired();
 
 
         // GÜVENLİK: EncryptedData, AES-256 şifrelenmiş payload içerir
@@ -146,14 +138,12 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
 
         // GÜVENLİK: Kullanıcının aktif secret'ları için composite index
         // Optimize eder: "X kullanıcısının tüm aktif secret'larını göster"
-        builder.HasIndex(s => new { s.OwnerId, s.IsDeleted })
-            .HasDatabaseName("IX_Secrets_Owner_NotDeleted")
-            .HasFilter("IsDeleted = 0");
+        builder.HasIndex(s => new { s.UserId, s.IsDeleted }) // UserId kullanıldı
+    .HasDatabaseName("IX_Secrets_User_NotDeleted")
+    .HasFilter("IsDeleted = 0");
 
-        // PERFORMANS: Secret arama için composite index
-        // Optimize eder: "X kullanıcısı için ada göre secret ara"
-        builder.HasIndex(s => new { s.OwnerId, s.Name })
-            .HasDatabaseName("IX_Secrets_Owner_Name");
+        builder.HasIndex(s => new { s.UserId, s.Title }) // UserId ve Title kullanıldı
+            .HasDatabaseName("IX_Secrets_User_Title");
 
         // ============================================================================
         // ROW-LEVEL SECURITY (SATIR SEVİYESİ GÜVENLİK) - SQL SERVER 2016+

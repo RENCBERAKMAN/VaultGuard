@@ -29,7 +29,7 @@ public interface IAuthService
     /// <param name="cancellationToken">Ýptal token</param>
     /// <returns>JWT token bilgileri</returns>
     Task<IDataResult<TokenDto>> RegisterAsync(RegisterDto registerDto, CancellationToken cancellationToken = default);
-
+    Task<IResult> LogoutAsync(string userId, CancellationToken cancellationToken = default);
     /// <summary>
     /// Refresh token ile yeni access token alýr.
     /// Token rotation uygulanmalý - eski token invalidate edilir.

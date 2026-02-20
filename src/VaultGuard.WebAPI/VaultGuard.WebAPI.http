@@ -1,6 +1,89 @@
-@VaultGuard.WebAPI_HostAddress = http://localhost:5217
+@hostname = http://localhost:5217
+@contentType = application/json
+@authToken = [JWT_TOKEN_BURAYA_GELECEK]
 
-GET {{VaultGuard.WebAPI_HostAddress}}/weatherforecast/
-Accept: application/json
+### ============================================
+### 1. SÝSTEM SAÐLIK KONTROLÜ (Health Checks)
+### ============================================
+
+# Veritabaný ve servislerin durumunu kontrol et
+GET {{hostname}}/health
+Accept: {{contentType}}
 
 ###
+
+### ============================================
+### 2. KÝMLÝK DOÐRULAMA (Authentication)
+### ============================================
+
+# Yeni Kullanýcý Kaydý
+# Anti-enumeration testi için mevcut mail ile tekrar dene!
+POST {{hostname}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "rencberakman",
+  "email": "test@rencberakman.com",
+  "password": "StrongPassword123!"
+}
+
+###
+
+# Kullanýcý Giriþi (Login)
+# Buradan dönen 'accessToken' deðerini yukarýdaki @authToken'a yapýþtýr.
+POST {{hostname}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "emailOrUsername": "test@rencberakman.com",
+  "password": "StrongPassword123!"
+}
+
+###
+
+# Token Yenileme (Refresh Token)
+POST {{hostname}}/api/auth/refresh-token
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "[REFRESH_TOKEN_BURAYA_GELECEK]"
+}
+
+###
+
+### ============================================
+### 3. KULLANICI ÝÞLEMLERÝ (User Management)
+### ============================================
+
+# Profil Bilgilerini Getir (JWT Gerekli)
+GET {{hostname}}/api/users/me
+Authorization: Bearer {{authToken}}
+Accept: {{contentType}}
+
+###
+
+# Þifre Deðiþtirme
+POST {{hostname}}/api/users/change-password
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "oldPassword": "StrongPassword123!",
+  "newPassword": "NewSecurePassword456!"
+}
+
+###
+
+# Tüm Cihazlardan Çýkýþ Yap
+POST {{hostname}}/api/users/logout-all-devices
+Authorization: Bearer {{authToken}}
+
+###
+
+### ============================================
+### 4. DÝJÝTAL KASA ÝÞLEMLERÝ (Secrets - Gelecek)
+### ============================================
+
+# Not: Bu kýsým SecretService eklendiðinde aktifleþecek
+# GET {{hostname}}/api/secrets
+# Authorization: Bearer {{authToken}}

@@ -122,6 +122,13 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.LastLoginAt)
             .HasDatabaseName("IX_Users_LastLoginAt");
 
+        builder.Property(u => u.RefreshToken)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        builder.Property(u => u.RefreshTokenExpiryTime)
+            .HasColumnType("datetime2(7)")
+            .IsRequired(false);
         // ============================================================================
         // SOFT DELETE (YUMUŞAK SİLME) - GLOBAL QUERY FILTER
         // ============================================================================
@@ -165,9 +172,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         // Bir-Çok İlişki: User -> Secrets
         builder.HasMany<Secret>()
-            .WithOne()
-            .HasForeignKey(s => s.OwnerId)
-            .OnDelete(DeleteBehavior.Restrict); // Güvenlik denetimi için cascade delete engellendi
+     .WithOne()
+     .HasForeignKey(s => s.UserId) // DÜZELTİLDİ: UserId kullanıldı
+     .OnDelete(DeleteBehavior.Restrict);
 
         // Bir-Çok İlişki: User -> AuditLogs
         builder.HasMany<AuditLog>()

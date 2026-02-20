@@ -1,218 +1,255 @@
-using System;
+ï»¿using System;
+using VaultGuard.Domain.Common;
 
 namespace VaultGuard.Domain.Entities;
 
 /// <summary>
-/// Þifrelenmiþ hassas veriyi temsil eden core entity.
-/// Sealed olarak tanýmlanmýþtýr çünkü iþ kurallarýmýzý korumak istiyoruz.
-/// Geniþletme ihtiyacý durumunda kalýtým yerine composition pattern kullanýlacaktýr.
+/// SECRET ENTITY: Elite Domain-Driven Design Implementation
 /// </summary>
-public sealed class Secret
+public sealed class Secret : BaseEntity
 {
-    /// <summary>
-    /// Benzersiz tanýmlayýcý (Primary Key).
-    /// init kullanýlarak oluþturulduktan sonra deðiþtirilemez hale getirilmiþtir.
-    /// Guid tercih edilmiþtir çünkü distributed sistemlerde çakýþma riski yoktur.
-    /// </summary>
-    public Guid Id { get; init; }
-
-    /// <summary>
-    /// Kullanýcýnýn bu secret'a verdiði anlamlý isim.
-    /// Örnek: "Gmail Þifrem", "AWS API Key", "Banka Kartý PIN"
-    /// Maksimum uzunluk: 200 karakter (Infrastructure'da validation yapýlacak)
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// AES-256 algoritmasý ile þifrelenmiþ ham veri.
-    /// byte[] kullanýlmasýnýn nedenleri:
-    /// 1. Þifreleme bit seviyesinde bir iþlemdir
-    /// 2. String encoding (UTF-8, ASCII) hatalarý engellenir
-    /// 3. Binary data'yý doðrudan saklayabiliriz
-    /// NOT: Asla plain text olarak saklanmaz!
-    /// </summary>
-    public byte[] EncryptedData { get; set; } = Array.Empty<byte>();
-
-    /// <summary>
-    /// Initialization Vector (Baþlatma Vektörü).
-    /// Her þifreleme iþleminde rastgele üretilir ve EncryptedData ile birlikte saklanýr.
-    /// IV'nin amacý: Ayný plain text'i iki kez þifrelediðinizde farklý sonuçlar elde etmek.
-    /// Güvenlik notu: IV'nin gizli kalmasý gerekmez, ama benzersiz olmasý ZORUNLUDUR.
-    /// AES-256 için IV boyutu: 16 byte (128 bit)
-    /// </summary>
-    public byte[] IV { get; set; } = Array.Empty<byte>();
-
-    /// <summary>
-    /// Bu secret'ýn sahibi olan kullanýcýnýn ID'si.
-    /// Navigation property yerine sadece ID kullanýlmasýnýn nedeni:
-    /// - Domain katmanýný saf tutmak (EF Core baðýmlýlýðýndan kaçýnmak)
-    /// - Aggregate boundary'leri net tutmak
-    /// Ýliþki: Infrastructure katmanýnda Foreign Key olarak tanýmlanacak
-    /// </summary>
-    public Guid OwnerId { get; set; }
-
-    /// <summary>
-    /// Secret'ýn sisteme eklendiði tarih ve saat (UTC).
-    /// init kullanýlarak oluþturulduktan sonra deðiþtirilemez.
-    /// Audit trail için kritik öneme sahiptir.
-    /// </summary>
-    public DateTime CreatedAt { get; init; }
-
-    /// <summary>
-    /// Secret'a en son eriþilme zamaný (UTC).
-    /// Nullable olmasýnýn nedeni: Ýlk oluþturulduðunda henüz eriþilmemiþtir.
-    /// Kullaným alanlarý:
-    /// 1. Compliance raporlarý (GDPR, SOC2)
-    /// 2. Kullanýlmayan secret'larýn temizlenmesi
-    /// 3. Þüpheli aktivite tespiti (anormal eriþim patternleri)
-    /// </summary>
-    public DateTime? LastAccessedAt { get; set; }
-
-    /// <summary>
-    /// Soft delete bayraðý (yumuþak silme).
-    /// true ise secret "silinmiþ" olarak iþaretlenir ancak veritabanýndan fiziksel olarak silinmez.
-    /// Kullaným senaryolarý:
-    /// - GDPR uyumluluðu (kullanýcý verilerini geri yükleme hakký)
-    /// - Yanlýþlýkla silme durumlarýnda kurtarma
-    /// - Compliance gereksinimleri (30 gün saklama politikasý)
-    /// </summary>
-    public bool IsDeleted { get; set; } = false;
-
-    /// <summary>
-    /// Secret'ýn silindiði tarih ve saat (UTC).
-    /// Nullable olmasýnýn nedeni: Aktif secret'lar için null olacak.
-    /// Kullaným alanlarý:
-    /// - Saklama politikasý (30 gün sonra hard delete)
-    /// - Audit raporlarý
-    /// - Kurtarma iþlemleri için zaman damgasý
-    /// </summary>
-    public DateTime? DeletedAt { get; set; }
-
     // ============================================================================
-    // CONSTRUCTOR
+    // PUBLIC PROPERTIES (Encapsulation via private set)
     // ============================================================================
 
-    /// <summary>
-    /// Private parameterless constructor.
-    /// EF Core tarafýndan entity'leri veritabanýndan yüklerken kullanýlýr.
-    /// Ýþ mantýðýnda kullanýlmamalýdýr; bunun yerine static factory method kullanýlýr.
-    /// </summary>
-    private Secret()
+    public string Title { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
+    public string EncryptedValue { get; private set; } = string.Empty;
+    public byte[] IV { get; private set; } = Array.Empty<byte>();
+    public string Category { get; private set; } = "Other";
+    public Guid UserId { get; private set; }
+    public DateTime? ExpiresAt { get; private set; }
+    public int AccessCount { get; private set; }
+    public DateTime? LastAccessedAt { get; private set; }
+
+    // ============================================================================
+    // ALIAS PROPERTIES (Test Compatibility)
+    // ============================================================================
+
+    public string Name => Title;
+    public string EncryptedData => EncryptedValue;
+
+    // ============================================================================
+    // QUERY PROPERTIES (Business Logic)
+    // ============================================================================
+
+    public bool IsExpired => ExpiresAt.HasValue && ExpiresAt.Value < DateTime.UtcNow;
+    public bool IsAccessible => !IsDeleted && !IsExpired;
+
+    // ============================================================================
+    // PRIVATE CONSTRUCTOR (EF Core)
+    // ============================================================================
+
+    private Secret() : base()
     {
-        // EF Core için gerekli
+        // EF Core requires parameterless constructor
     }
 
-    /// <summary>
-    /// Secret oluþturmak için static factory method.
-    /// Bu pattern kullanýlmasýnýn nedenleri:
-    /// 1. Validation logic'i merkezi bir yerde toplanýr
-    /// 2. Invalid state'te obje oluþturulmasý engellenir
-    /// 3. Constructor overload kargaþasý önlenir
-    /// </summary>
-    /// <param name="name">Secret'ýn kullanýcý dostu adý</param>
-    /// <param name="encryptedData">AES-256 ile þifrelenmiþ veri</param>
-    /// <param name="iv">Þifreleme için kullanýlan IV</param>
-    /// <param name="ownerId">Secret'ýn sahibi olan kullanýcý ID</param>
-    /// <returns>Yeni Secret instance'ý</returns>
-    /// <exception cref="ArgumentException">Parametreler geçersizse fýrlatýlýr</exception>
+    // ============================================================================
+    // FACTORY METHOD (DDD Pattern)
+    // ============================================================================
+
     public static Secret Create(
-        string name,
-        byte[] encryptedData,
+        string title,
+        string encryptedValue,
         byte[] iv,
-        Guid ownerId)
+        Guid userId,
+        string category = "Other",
+        string? description = null,
+        DateTime? expiresAt = null)
     {
-        // Domain-level validation (iþ kurallarý)
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Secret name cannot be empty.", nameof(name));
-
-        if (encryptedData == null || encryptedData.Length == 0)
-            throw new ArgumentException("Encrypted data cannot be empty.", nameof(encryptedData));
-
-        if (iv == null || iv.Length != 16) // AES-256 IV size = 16 bytes
-            throw new ArgumentException("IV must be exactly 16 bytes for AES-256.", nameof(iv));
-
-        if (ownerId == Guid.Empty)
-            throw new ArgumentException("Owner ID cannot be empty.", nameof(ownerId));
+        var validatedTitle = ValidateTitle(title);
+        var validatedEncryptedValue = ValidateEncryptedValue(encryptedValue);
+        var validatedIV = ValidateIV(iv);
+        var validatedUserId = ValidateUserId(userId);
+        var validatedCategory = ValidateCategory(category);
+        var validatedDescription = ValidateDescription(description);
+        var validatedExpiresAt = ValidateExpiresAt(expiresAt);
 
         return new Secret
         {
             Id = Guid.NewGuid(),
-            Name = name.Trim(),
-            EncryptedData = encryptedData,
-            IV = iv,
-            OwnerId = ownerId,
-            CreatedAt = DateTime.UtcNow,
+            Title = validatedTitle,
+            Description = validatedDescription,
+            EncryptedValue = validatedEncryptedValue,
+            IV = validatedIV,
+            Category = validatedCategory,
+            UserId = validatedUserId,
+            ExpiresAt = validatedExpiresAt,
+            AccessCount = 0,
             LastAccessedAt = null,
-            IsDeleted = false,
-            DeletedAt = null
+            CreatedAt = DateTime.UtcNow
+            // UpdatedAt KALDIRILDI - BaseEntity constructor'Ä± halleder!
         };
     }
 
     // ============================================================================
-    // BUSINESS METHODS
+    // BUSINESS METHODS (Rich Domain Model)
     // ============================================================================
 
-    /// <summary>
-    /// Secret'a eriþildiðini kaydet.
-    /// Bu method her Get/Decrypt iþleminde çaðrýlmalýdýr.
-    /// Kullaným: auditService.LogAccess(secret.MarkAsAccessed());
-    /// </summary>
-    public void MarkAsAccessed()
+    public void UpdateTitle(string newTitle)
     {
+        var validatedTitle = ValidateTitle(newTitle);
+        if (Title == validatedTitle) return;
+        Title = validatedTitle;
+        UpdateTimestamp();
+    }
+
+    public void UpdateDescription(string? newDescription)
+    {
+        var validatedDescription = ValidateDescription(newDescription);
+        if (Description == validatedDescription) return;
+        Description = validatedDescription;
+        UpdateTimestamp();
+    }
+
+    public void UpdateCategory(string newCategory)
+    {
+        var validatedCategory = ValidateCategory(newCategory);
+        if (Category == validatedCategory) return;
+        Category = validatedCategory;
+        UpdateTimestamp();
+    }
+
+    public void ReEncrypt(string newEncryptedValue, byte[] newIV)
+    {
+        var validatedEncryptedValue = ValidateEncryptedValue(newEncryptedValue);
+        var validatedIV = ValidateIV(newIV);
+        EncryptedValue = validatedEncryptedValue;
+        IV = validatedIV;
+        UpdateTimestamp();
+    }
+
+    public void SetExpiration(DateTime? expiresAt)
+    {
+        var validatedExpiresAt = ValidateExpiresAt(expiresAt);
+        if (ExpiresAt == validatedExpiresAt) return;
+        ExpiresAt = validatedExpiresAt;
+        UpdateTimestamp();
+    }
+
+    public void RecordAccess()
+    {
+        AccessCount++;
         LastAccessedAt = DateTime.UtcNow;
+        UpdateTimestamp();
     }
 
-    /// <summary>
-    /// Secret'ýn adýný güncelle.
-    /// Domain event tetiklemek için kullanýlabilir (ileride).
-    /// </summary>
-    /// <param name="newName">Yeni secret adý</param>
-    public void UpdateName(string newName)
+    public void ExtendExpiration(int days)
     {
-        if (string.IsNullOrWhiteSpace(newName))
-            throw new ArgumentException("Secret name cannot be empty.", nameof(newName));
+        if (days <= 0)
+            throw new ArgumentException("Days must be positive", nameof(days));
+        if (!ExpiresAt.HasValue)
+            throw new InvalidOperationException("Cannot extend secret without expiration");
+        if (IsExpired)
+            throw new InvalidOperationException("Cannot extend expired secret");
 
-        Name = newName.Trim();
+        ExpiresAt = ExpiresAt.Value.AddDays(days);
+        UpdateTimestamp();
     }
 
-    /// <summary>
-    /// Secret'ýn þifrelenmiþ verisini yeniden þifrele (key rotation senaryosu).
-    /// Key rotation iþlemi sýrasýnda bu method kullanýlýr.
-    /// </summary>
-    /// <param name="newEncryptedData">Yeni þifrelenmiþ veri</param>
-    /// <param name="newIV">Yeni IV</param>
-    public void ReEncrypt(byte[] newEncryptedData, byte[] newIV)
+    // ============================================================================
+    // QUERY METHODS (Business Rules)
+    // ============================================================================
+
+    public bool CanDecrypt() => !IsDeleted && !IsExpired;
+    public bool IsOwnedBy(Guid userId) => UserId == userId;
+
+    public int? DaysUntilExpiration
     {
-        if (newEncryptedData == null || newEncryptedData.Length == 0)
-            throw new ArgumentException("Encrypted data cannot be empty.", nameof(newEncryptedData));
-
-        if (newIV == null || newIV.Length != 16)
-            throw new ArgumentException("IV must be exactly 16 bytes.", nameof(newIV));
-
-        EncryptedData = newEncryptedData;
-        IV = newIV;
+        get
+        {
+            if (!ExpiresAt.HasValue) return null;
+            var timeSpan = ExpiresAt.Value - DateTime.UtcNow;
+            return (int)Math.Ceiling(timeSpan.TotalDays);
+        }
     }
 
-    /// <summary>
-    /// Secret'ý soft delete ile iþaretle.
-    /// Fiziksel olarak veritabanýndan silinmez, sadece IsDeleted = true olur.
-    /// </summary>
-    public void MarkAsDeleted()
-    {
-        IsDeleted = true;
-        DeletedAt = DateTime.UtcNow;
+    // ============================================================================
+    // PRIVATE VALIDATION METHODS
+    // ============================================================================
 
-        // TODO: Domain Event - SecretDeletedEvent
+    private static string ValidateTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Secret title cannot be empty", nameof(title));
+
+        var trimmed = title.Trim();
+        if (trimmed.Length > 200)
+            throw new ArgumentException("Secret title too long (max 200 characters)", nameof(title));
+
+        return trimmed;
     }
 
-    /// <summary>
-    /// Soft delete edilmiþ secret'ý geri yükle.
-    /// </summary>
-    public void Restore()
+    private static string ValidateDescription(string? description)
     {
-        IsDeleted = false;
-        DeletedAt = null;
+        if (string.IsNullOrWhiteSpace(description))
+            return string.Empty;
 
-        // TODO: Domain Event - SecretRestoredEvent
+        var trimmed = description.Trim();
+        if (trimmed.Length > 500)
+            throw new ArgumentException("Secret description too long (max 500 characters)", nameof(description));
+
+        return trimmed;
+    }
+
+    private static string ValidateEncryptedValue(string encryptedValue)
+    {
+        if (string.IsNullOrWhiteSpace(encryptedValue))
+            throw new ArgumentException("Encrypted value cannot be empty", nameof(encryptedValue));
+
+        var trimmed = encryptedValue.Trim();
+        if (trimmed.Length % 4 != 0)
+            throw new ArgumentException("Invalid encrypted value format (not Base64)", nameof(encryptedValue));
+        if (trimmed.Length < 44)
+            throw new ArgumentException("Encrypted value too short - must be AES-256-GCM ciphertext", nameof(encryptedValue));
+
+        return trimmed;
+    }
+
+    private static byte[] ValidateIV(byte[] iv)
+    {
+        if (iv == null || iv.Length == 0)
+            throw new ArgumentException("IV cannot be null or empty", nameof(iv));
+        if (iv.Length != 12)
+            throw new ArgumentException("IV must be exactly 12 bytes (96 bits) for AES-GCM", nameof(iv));
+
+        return iv;
+    }
+
+    private static Guid ValidateUserId(Guid userId)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User ID cannot be empty", nameof(userId));
+
+        return userId;
+    }
+
+    private static string ValidateCategory(string category)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+            return "Other";
+
+        var trimmed = category.Trim();
+        var validCategories = new[] { "Password", "ApiKey", "CreditCard", "Note", "Other" };
+        var matched = Array.Find(validCategories, c => c.Equals(trimmed, StringComparison.OrdinalIgnoreCase));
+
+        if (matched == null)
+            throw new ArgumentException($"Invalid category. Valid categories: {string.Join(", ", validCategories)}", nameof(category));
+
+        return matched;
+    }
+
+    private static DateTime? ValidateExpiresAt(DateTime? expiresAt)
+    {
+        if (!expiresAt.HasValue)
+            return null;
+
+        if (expiresAt.Value <= DateTime.UtcNow)
+            throw new ArgumentException("Expiration date must be in the future", nameof(expiresAt));
+        if (expiresAt.Value > DateTime.UtcNow.AddYears(10))
+            throw new ArgumentException("Expiration date too far in future (max 10 years)", nameof(expiresAt));
+
+        return expiresAt.Value;
     }
 }
