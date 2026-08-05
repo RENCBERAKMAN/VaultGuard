@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -55,9 +55,9 @@ public sealed class SecretRepository : ISecretRepository
         CancellationToken cancellationToken = default)
     {
         // PERFORMANCE: AsNoTracking() for read-only queries
-        // EAGER LOADING: Include User for future use (if needed)
         // SOFT DELETE: Filter IsDeleted == false
         // SORTING: Order by CreatedAt DESC (newest first)
+        // âœ… FIX: OwnerId -> UserId
         return await _context.Secrets
             .AsNoTracking()
             .Where(s => s.UserId == userId && !s.IsDeleted)
@@ -90,9 +90,10 @@ public sealed class SecretRepository : ISecretRepository
             return null;
         }
 
-        // CASE INSENSITIVE: Use EF.Functions.Like or database collation
+        // CASE INSENSITIVE: Use ToLower() for comparison
         // SOFT DELETE: Filter IsDeleted == false
         // PERFORMANCE: AsNoTracking() for read-only query
+        // âœ… FIX: OwnerId -> UserId, Name -> Title
         return await _context.Secrets
             .AsNoTracking()
             .FirstOrDefaultAsync(
@@ -113,8 +114,6 @@ public sealed class SecretRepository : ISecretRepository
             throw new ArgumentNullException(nameof(secret));
         }
 
-       
-
         // ADD: Entity to context (not committed yet)
         await _context.Secrets.AddAsync(secret, cancellationToken);
 
@@ -126,15 +125,20 @@ public sealed class SecretRepository : ISecretRepository
 
     /// <inheritdoc/>
     public async Task<Secret> UpdateAsync(
-    Secret secret,
-    CancellationToken cancellationToken = default)
+        Secret secret,
+        CancellationToken cancellationToken = default)
     {
-        if (secret == null) throw new ArgumentNullException(nameof(secret));
+        // VALIDATION: Null check
+        if (secret == null)
+        {
+            throw new ArgumentNullException(nameof(secret));
+        }
 
-        // EF Core zaten nesneyi takip ediyor (track), 
-        // sadece durumunu 'Modified' olarak iþaretlememiz yeterli.
+        // UPDATE: Mark entity as modified
+        // EF Core will track changes and update database on SaveChanges()
         _context.Entry(secret).State = EntityState.Modified;
 
+        // Return the secret (async for consistency, though operation is synchronous)
         return await Task.FromResult(secret);
     }
 
@@ -149,10 +153,11 @@ public sealed class SecretRepository : ISecretRepository
             throw new ArgumentNullException(nameof(secret));
         }
 
-       
-        secret.MarkAsDeleted(); // Domain modelindeki akýllý metodu çaðýrdýk
+        // SOFT DELETE: Use domain method
+        // âœ… FIX: Call MarkAsDeleted() which sets IsDeleted = true and DeletedAt = DateTime.UtcNow
+        secret.MarkAsDeleted();
 
-        // UPDATE: Entity with soft delete flags
+        // UPDATE: Save soft delete flags to database
         await UpdateAsync(secret, cancellationToken);
 
         // HARD DELETE (Alternative - uncomment for physical deletion):
@@ -171,6 +176,7 @@ public sealed class SecretRepository : ISecretRepository
     {
         // PERFORMANCE: CountAsync() more efficient than loading all entities
         // SOFT DELETE: Filter IsDeleted == false
+        // âœ… FIX: OwnerId -> UserId
         return await _context.Secrets
             .CountAsync(s => s.UserId == userId && !s.IsDeleted, cancellationToken);
     }

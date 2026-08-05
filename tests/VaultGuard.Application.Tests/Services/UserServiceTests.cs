@@ -133,7 +133,7 @@ public class UserServiceTests : TestBase
         MockUserRepository.Setup(x => x.ExistsByEmailAsync("taken@vault.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var dto = new UpdateUserDto { Id = user.Id, Email = "taken@vault.com" };
-        var result = await _userService.UpdateAsync(dto);
+        var result = await _userService.UpdateAsync(user.Id, dto);
 
         Assert.False(result.Success);
         Assert.Contains("email", result.Message.ToLower());
@@ -150,7 +150,7 @@ public class UserServiceTests : TestBase
         MockUserRepository.Setup(x => x.ExistsByUsernameAsync("takenuser", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var dto = new UpdateUserDto { Id = user.Id, Username = "takenuser" };
-        var result = await _userService.UpdateAsync(dto);
+        var result = await _userService.UpdateAsync(user.Id, dto);
 
         Assert.False(result.Success);
         Assert.Contains("kullanıcı adı", result.Message.ToLower());
@@ -166,7 +166,7 @@ public class UserServiceTests : TestBase
         MockUserRepository.Setup(x => x.ExistsByEmailAsync("new@vault.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         var dto = new UpdateUserDto { Id = user.Id, Email = "new@vault.com" };
-        var result = await _userService.UpdateAsync(dto);
+        var result = await _userService.UpdateAsync(user.Id, dto);
 
         Assert.True(result.Success);
         MockUserRepository.Verify(x => x.Update(It.Is<User>(u => u.Id == user.Id)), Times.Once);

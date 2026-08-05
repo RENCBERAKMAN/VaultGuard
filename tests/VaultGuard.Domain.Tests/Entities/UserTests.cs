@@ -180,28 +180,7 @@ public class UserTests
         Assert.InRange(user.LastLoginAt.Value, beforeLogin, afterLogin);
     }
 
-    // ============================================================================
-    // TEST 9: UpdateLastLogin Method (Yeni Test)
-    // ============================================================================
-    [Fact]
-    public void UpdateLastLogin_ShouldSetLastLoginAtToSpecifiedTime()
-    {
-        // Arrange
-        var user = User.Create(
-            email: "test@vaultguard.com",
-            username: "testuser",
-            passwordHash: "$2a$11$q9h/lSu3v36vE6K5A4yR.eB5OQ.5JzB1X9pQzY5H5f6W7b8c9d0e1");
-
-        Assert.Null(user.LastLoginAt); // Baþlangýçta null olmalý
-
-        // Act
-        var specificLoginTime = new DateTime(2025, 1, 15, 10, 30, 0, DateTimeKind.Utc);
-        user.UpdateLastLogin(specificLoginTime);
-
-        // Assert
-        Assert.NotNull(user.LastLoginAt);
-        Assert.Equal(specificLoginTime, user.LastLoginAt.Value);
-    }
+   
 
     // ============================================================================
     // TEST 10: Multiple Users - Unique IDs

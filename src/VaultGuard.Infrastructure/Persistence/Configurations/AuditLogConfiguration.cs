@@ -133,11 +133,10 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .IsDescending(false, true); // UserId ASC, Timestamp DESC
 
         // GÜVENLİK: Güvenlik olay korelasyonu için composite index
-        // Optimize eder: "Son 1 saatte bu IP'den gelen tüm başarısız login denemelerini göster"
+        // Optimize eder: "Bu IP'den gelen başarısız veya hatalı işlemleri göster"
         builder.HasIndex(a => new { a.Action, a.IpAddress, a.Timestamp })
-            .HasDatabaseName("IX_AuditLogs_Action_IpAddress_Timestamp")
-            .HasFilter("Action LIKE '%Failed%' OR [Action] LIKE '%Error%'"); // Partial index
-
+            .HasDatabaseName("IX_AuditLogs_Action_IpAddress_Timestamp");
+           // .HasFilter("[Action] = 'Failed' OR [Action] = 'Error'"); // ✅ SQL Server uyumlu hale getirildi
         // GÜVENLİK: Entity değişiklik takibi için composite index
         // Optimize eder: "Belirli bir entity'nin tam geçmişini göster"
         builder.HasIndex(a => new { a.EntityName, a.EntityId, a.Timestamp })
