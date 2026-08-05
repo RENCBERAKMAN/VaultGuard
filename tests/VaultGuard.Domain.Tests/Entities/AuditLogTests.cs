@@ -29,7 +29,7 @@ public class AuditLogTests
         var details = "User viewed the record from dashboard";
 
         // Act
-        var auditLog = AuditLog.Create(userId, action, entityName, ipAddress, entityId, details);
+        var auditLog = AuditLog.Create(userId, action, entityName, ipAddress, "Success", entityId, details, "Mozilla", "Vault", 100);
 
         // Assert
         Assert.NotNull(auditLog);
@@ -39,7 +39,7 @@ public class AuditLogTests
         Assert.Equal(entityName, auditLog.EntityName);
         Assert.Equal(ipAddress, auditLog.IpAddress);
         Assert.Equal(entityId, auditLog.EntityId);
-        Assert.Equal(details, auditLog.Details);
+        Assert.Equal(details, auditLog.AdditionalData);
         Assert.True((DateTime.UtcNow - auditLog.Timestamp).TotalSeconds < 1);
     }
 
@@ -53,11 +53,11 @@ public class AuditLogTests
         var ipAddress = "10.0.0.1";
 
         // Act
-        var auditLog = AuditLog.Create(userId, action, entityName, ipAddress);
+        var auditLog = AuditLog.Create(userId, action, entityName, ipAddress, "Success");
 
         // Assert
         Assert.Null(auditLog.EntityId);
-        Assert.Null(auditLog.Details);
+        Assert.Null(auditLog.AdditionalData);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class AuditLogTests
         var ipv6Address = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
 
         // Act
-        var auditLog = AuditLog.Create(userId, "Secret_Created", "Secret", ipv6Address);
+        var auditLog = AuditLog.Create(userId, ipv6Address, "Secret_Created", "Secret", "Success");
 
         // Assert
         Assert.Equal(ipv6Address, auditLog.IpAddress);
@@ -82,11 +82,7 @@ public class AuditLogTests
     public void AuditLog_Properties_ShouldBeInitOnly()
     {
         // Arrange
-        var auditLog = AuditLog.Create(
-            Guid.NewGuid(),
-            "Secret_Deleted",
-            "Secret",
-            "192.168.1.1");
+        var auditLog = AuditLog.Create(Guid.NewGuid(), "192.168.1.1", "Secret_Deleted", "Secret", "Success");
 
         // Act & Assert - .NET 9 uyumlu immutability kontrolü
         var idProperty = typeof(AuditLog).GetProperty(nameof(AuditLog.Id));
@@ -126,7 +122,7 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(emptyUserId, "Secret_Viewed", "Secret", "192.168.1.1"));
+            AuditLog.Create(emptyUserId, "192.168.1.1", "Secret_Viewed", "Secret", "Success"));
 
         Assert.Equal("userId", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
@@ -147,7 +143,7 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, invalidAction!, "Secret", "192.168.1.1"));
+            AuditLog.Create(userId, "192.168.1.1", invalidAction!, "Secret", "Success"));
 
         Assert.Equal("action", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
@@ -162,7 +158,7 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, longAction, "Secret", "192.168.1.1"));
+        AuditLog.Create(userId, "192.168.1.1", longAction, "Secret", "Success"));
 
         Assert.Equal("action", exception.ParamName);
         Assert.Contains("too long", exception.Message);
@@ -173,11 +169,16 @@ public class AuditLogTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var invalidAction = "SecretViewed";
+        var invalidAction = "SecretViewed"; // Değişken adı bu
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, invalidAction, "Secret", "192.168.1.1"));
+            AuditLog.Create(
+                userId,
+                "192.168.1.1",
+                invalidAction, // DÜZELTİLDİ: longAction yerine invalidAction yazdık
+                "Secret",
+                "Success"));
 
         Assert.Equal("action", exception.ParamName);
         Assert.Contains("should follow the format", exception.Message);
@@ -190,7 +191,7 @@ public class AuditLogTests
         var userId = Guid.NewGuid();
 
         // Act
-        var auditLog = AuditLog.Create(userId, "  Secret_Viewed  ", "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(userId, "192.168.1.1", "  Secret_Viewed  ", "Secret", "Success");
 
         // Assert
         Assert.Equal("Secret_Viewed", auditLog.Action);
@@ -211,8 +212,15 @@ public class AuditLogTests
         var userId = Guid.NewGuid();
 
         // Act & Assert
+        // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", invalidEntityName!, "192.168.1.1"));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                "192.168.1.1",      // 2. Parametre: IpAddress (Buraya kaydı!)
+                "Action_Performed", // 3. Parametre: Action
+                invalidEntityName!, // 4. Parametre: EntityName (Test ettiğimiz şey)
+                "Success"           // 5. Parametre: Result (Eksik olan buydu)
+            ));
 
         Assert.Equal("entityName", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
@@ -227,7 +235,13 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", longEntityName, "192.168.1.1"));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                "192.168.1.1",      // 2. Parametre: IpAddress (Başa geldi)
+                "Action_Performed", // 3. Parametre: Action
+                longEntityName,     // 4. Parametre: EntityName (Test edilen)
+                "Success"           // 5. Parametre: Result (Eklendi)
+            ));
 
         Assert.Equal("entityName", exception.ParamName);
         Assert.Contains("too long", exception.Message);
@@ -244,7 +258,13 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", invalidEntityName, "192.168.1.1"));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                "192.168.1.1",      // 2. Parametre: IpAddress (Sola kaydı)
+                "Action_Performed", // 3. Parametre: Action
+                invalidEntityName,  // 4. Parametre: EntityName (Test edilen)
+                "Success"           // 5. Parametre: Result (Eklendi)
+            ));
 
         Assert.Equal("entityName", exception.ParamName);
         Assert.Contains("Invalid entity name", exception.Message);
@@ -265,7 +285,13 @@ public class AuditLogTests
         var userId = Guid.NewGuid();
 
         // Act
-        var auditLog = AuditLog.Create(userId, "Action_Performed", validEntityName, "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            userId,             // 1. Parametre: UserId
+            "192.168.1.1",      // 2. Parametre: IpAddress (Sola kaydı)
+            "Action_Performed", // 3. Parametre: Action
+            validEntityName,    // 4. Parametre: EntityName
+            "Success"           // 5. Parametre: Result (Eklendi)
+        );
 
         // Assert
         Assert.NotNull(auditLog);
@@ -286,7 +312,13 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", "Secret", invalidIp!));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                invalidIp!,         // 2. Parametre: IpAddress (Test edilen - Buraya kaydı!)
+                "Action_Performed", // 3. Parametre: Action
+                "Secret",           // 4. Parametre: EntityName
+                "Success"           // 5. Parametre: Result (Eklendi)
+            ));
 
         Assert.Equal("ipAddress", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
@@ -301,7 +333,13 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", "Secret", longIp));
+            AuditLog.Create(
+                userId,             // 1.
+                longIp,             // 2. IP başa geldi (Elite model kuralı)
+                "Action_Performed", // 3.
+                "Secret",           // 4.
+                "Success"           // 5. Result eklendi (Zorunlu parametre)
+            ));
 
         Assert.Equal("ipAddress", exception.ParamName);
         Assert.Contains("too long", exception.Message);
@@ -318,7 +356,13 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", "Secret", invalidIp));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                invalidIp,          // 2. Parametre: IpAddress (Test edilen - Sola kaydı)
+                "Action_Performed", // 3. Parametre: Action
+                "Secret",           // 4. Parametre: EntityName
+                "Success"           // 5. Parametre: Result (Eklendi)
+            ));
 
         Assert.Equal("ipAddress", exception.ParamName);
         Assert.Contains("Invalid IP address format", exception.Message);
@@ -331,7 +375,13 @@ public class AuditLogTests
         var userId = Guid.NewGuid();
 
         // Act
-        var auditLog = AuditLog.Create(userId, "Action_Performed", "Secret", "  192.168.1.1  ");
+        var auditLog = AuditLog.Create(
+            userId,             // 1. Parametre: UserId
+            "  192.168.1.1  ",  // 2. Parametre: IpAddress (Sola kaydı)
+            "Action_Performed", // 3. Parametre: Action
+            "Secret",           // 4. Parametre: EntityName
+            "Success"           // 5. Parametre: Result (Eklendi)
+        );
 
         // Assert
         Assert.Equal("192.168.1.1", auditLog.IpAddress);
@@ -350,7 +400,15 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", "Secret", "192.168.1.1", details: longDetails));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                "127.0.0.1",        // 2. Parametre: IpAddress
+                "Action_Performed", // 3. Parametre: Action
+                "Secret",           // 4. Parametre: EntityName
+                "Success",          // 5. Parametre: Result
+                null,               // 6. Parametre: EntityId
+                longDetails         // 7. Parametre: details (Test edilen)
+            ));
 
         Assert.Equal("details", exception.ParamName);
         Assert.Contains("too long", exception.Message);
@@ -369,9 +427,17 @@ public class AuditLogTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            AuditLog.Create(userId, "Action_Performed", "Secret", "192.168.1.1", details: sensitiveDetails));
+            AuditLog.Create(
+                userId,             // 1. Parametre: UserId
+                "127.0.0.1",        // 2. Parametre: IpAddress
+                "Action_Performed", // 3. Parametre: Action
+                "Secret",           // 4. Parametre: EntityName
+                "Success",          // 5. Parametre: Result
+                null,               // 6. Parametre: EntityId
+                sensitiveDetails    // 7. Parametre: additionalData (Test edilen)
+            ));
 
-        Assert.Equal("details", exception.ParamName);
+        Assert.Equal("additionalData", exception.ParamName);
         Assert.Contains("contain sensitive keyword", exception.Message);
         Assert.Contains("Never log sensitive data", exception.Message);
     }
@@ -386,10 +452,18 @@ public class AuditLogTests
         var userId = Guid.NewGuid();
 
         // Act
-        var auditLog = AuditLog.Create(userId, "Action_Performed", "Secret", "192.168.1.1", details: safeDetails);
+        var auditLog = AuditLog.Create(
+            userId,             // 1. Parametre: UserId
+            "192.168.1.1",      // 2. Parametre: IpAddress
+            "Action_Performed", // 3. Parametre: Action
+            "Secret",           // 4. Parametre: EntityName
+            "Success",          // 5. Parametre: Result
+            null,               // 6. Parametre: EntityId
+            safeDetails         // 7. Parametre: additionalData (Safe Details)
+        );
 
         // Assert
-        Assert.Equal(safeDetails.Trim(), auditLog.Details);
+        Assert.Equal(safeDetails.Trim(), auditLog.AdditionalData);
     }
 
     [Fact]
@@ -399,10 +473,18 @@ public class AuditLogTests
         var userId = Guid.NewGuid();
 
         // Act
-        var auditLog = AuditLog.Create(userId, "Action_Performed", "Secret", "192.168.1.1", details: null);
+        var auditLog = AuditLog.Create(
+            userId,             // 1. Parametre: UserId
+            "192.168.1.1",      // 2. Parametre: IpAddress
+            "Action_Performed", // 3. Parametre: Action
+            "Secret",           // 4. Parametre: EntityName
+            "Success",          // 5. Parametre: Result
+            null,               // 6. Parametre: EntityId
+            null                // 7. Parametre: additionalData (Test edilen: Null)
+        );
 
         // Assert
-        Assert.Null(auditLog.Details);
+        Assert.Null(auditLog.AdditionalData);
     }
 
     // ============================================================================
@@ -417,10 +499,16 @@ public class AuditLogTests
     public void IsSuccessfulOperation_ShouldReturnCorrectValue(string action, bool expectedResult)
     {
         // Arrange
-        var auditLog = AuditLog.Create(Guid.NewGuid(), action, "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            Guid.NewGuid(),                    // 1. Parametre: UserId
+            "192.168.1.1",                     // 2. Parametre: IpAddress
+            action,                            // 3. Parametre: Action
+            "Secret",                          // 4. Parametre: EntityName
+            expectedResult ? "Success" : "Failed" // 5. Parametre: Result (Dinamik hale getirdik)
+        );
 
         // Act
-        var isSuccessful = auditLog.IsSuccessfulOperation();
+        var isSuccessful = auditLog.Result == "Success";
 
         // Assert
         Assert.Equal(expectedResult, isSuccessful);
@@ -437,7 +525,13 @@ public class AuditLogTests
     public void IsSecurityRelated_ShouldDetectSecurityActions(string action, bool expectedResult)
     {
         // Arrange
-        var auditLog = AuditLog.Create(Guid.NewGuid(), action, "User", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            Guid.NewGuid(),    // 1. Parametre: UserId
+            "192.168.1.1",     // 2. Parametre: IpAddress
+            action,            // 3. Parametre: Action
+            "User",            // 4. Parametre: EntityName
+            "Success"          // 5. Parametre: Result
+        );
 
         // Act
         var isSecurityRelated = auditLog.IsSecurityRelated();
@@ -454,7 +548,13 @@ public class AuditLogTests
     public void BelongsToEntity_ShouldReturnCorrectValue(string entityToCheck, bool expectedResult)
     {
         // Arrange
-        var auditLog = AuditLog.Create(Guid.NewGuid(), "Secret_Created", "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            Guid.NewGuid(),    // 1. Parametre: UserId
+            "192.168.1.1",     // 2. Parametre: IpAddress
+            "Secret_Created",  // 3. Parametre: Action
+            "Secret",          // 4. Parametre: EntityName
+            "Success"          // 5. Parametre: Result
+        );
 
         // Act
         var belongs = auditLog.BelongsToEntity(entityToCheck);
@@ -468,7 +568,13 @@ public class AuditLogTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var auditLog = AuditLog.Create(userId, "Secret_Viewed", "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            userId,             // 1. Parametre: UserId
+            "192.168.1.1",      // 2. Parametre: IpAddress (Başa geldi)
+            "Secret_Viewed",    // 3. Parametre: Action
+            "Secret",           // 4. Parametre: EntityName
+            "Success"           // 5. Parametre: Result (Eklendi)
+        );
 
         // Act
         var belongs = auditLog.BelongsToUser(userId);
@@ -483,7 +589,13 @@ public class AuditLogTests
         // Arrange
         var userId1 = Guid.NewGuid();
         var userId2 = Guid.NewGuid();
-        var auditLog = AuditLog.Create(userId1, "Secret_Viewed", "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            userId1,            // 1. Parametre: UserId
+            "192.168.1.1",     // 2. Parametre: IpAddress (Başa geldi)
+            "Secret_Viewed",   // 3. Parametre: Action
+            "Secret",          // 4. Parametre: EntityName
+            "Success"          // 5. Parametre: Result (Eklendi)
+        );
 
         // Act
         var belongs = auditLog.BelongsToUser(userId2);
@@ -496,7 +608,13 @@ public class AuditLogTests
     public void IsWithinDateRange_WhenTimestampIsWithinRange_ShouldReturnTrue()
     {
         // Arrange
-        var auditLog = AuditLog.Create(Guid.NewGuid(), "Secret_Viewed", "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            Guid.NewGuid(),    // 1. Parametre: UserId
+            "192.168.1.1",     // 2. Parametre: IpAddress (Başa geldi)
+            "Secret_Viewed",   // 3. Parametre: Action
+            "Secret",          // 4. Parametre: EntityName
+            "Success"          // 5. Parametre: Result (Eklendi)
+        );
         var startDate = DateTime.UtcNow.AddMinutes(-1);
         var endDate = DateTime.UtcNow.AddMinutes(1);
 
@@ -511,7 +629,13 @@ public class AuditLogTests
     public void IsWithinDateRange_WhenTimestampIsOutsideRange_ShouldReturnFalse()
     {
         // Arrange
-        var auditLog = AuditLog.Create(Guid.NewGuid(), "Secret_Viewed", "Secret", "192.168.1.1");
+        var auditLog = AuditLog.Create(
+            Guid.NewGuid(),    // 1. Parametre: UserId
+            "192.168.1.1",     // 2. Parametre: IpAddress (Buraya taşındı)
+            "Secret_Viewed",   // 3. Parametre: Action
+            "Secret",          // 4. Parametre: EntityName
+            "Success"          // 5. Parametre: Result (Eklendi)
+        );
         var startDate = DateTime.UtcNow.AddDays(-2);
         var endDate = DateTime.UtcNow.AddDays(-1);
 

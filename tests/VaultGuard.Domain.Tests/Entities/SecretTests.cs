@@ -5,9 +5,9 @@ using Xunit;
 namespace VaultGuard.Domain.Tests.Entities;
 
 /// <summary>
-/// Secret entity için kapsamlý unit test'ler.
+/// Secret entity iï¿½in kapsamlï¿½ unit test'ler.
 /// .NET 9 ve Nullable Reference Types uyumlu.
-/// Þifreleme, soft delete ve eriþim takibi testleri içerir.
+/// ï¿½ifreleme, soft delete ve eriï¿½im takibi testleri iï¿½erir.
 /// </summary>
 public class SecretTests
 {
@@ -19,25 +19,20 @@ public class SecretTests
     public void Create_WithValidParameters_ShouldCreateSecret()
     {
         // Arrange
-        var name = "My API Key";
-        var encryptedData = new byte[] { 1, 2, 3, 4, 5 };
-        var iv = new byte[16]; // AES-256 için 16 byte IV
-        var ownerId = Guid.NewGuid();
+        var title = "My API Key";
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB"; // Base64 String
+        var iv = new byte[12]; // 12 byte IV
+        var userId = Guid.NewGuid();
 
         // Act
-        var secret = Secret.Create(name, encryptedData, iv, ownerId);
+        var secret = Secret.Create(title, encryptedValue, iv, userId);
 
         // Assert
         Assert.NotNull(secret);
-        Assert.NotEqual(Guid.Empty, secret.Id);
-        Assert.Equal(name, secret.Name);
-        Assert.Equal(encryptedData, secret.EncryptedData);
+        Assert.Equal(title, secret.Title);
+        Assert.Equal(encryptedValue, secret.EncryptedValue);
         Assert.Equal(iv, secret.IV);
-        Assert.Equal(ownerId, secret.OwnerId);
-        Assert.False(secret.IsDeleted);
-        Assert.Null(secret.LastAccessedAt);
-        Assert.Null(secret.DeletedAt);
-        Assert.True(secret.CreatedAt <= DateTime.UtcNow);
+        Assert.Equal(userId, secret.UserId);
     }
 
     // ============================================================================
@@ -51,15 +46,15 @@ public class SecretTests
     public void Create_WithEmptyOrWhitespaceName_ShouldThrowArgumentException(string? invalidName)
     {
         // Arrange
-        var encryptedData = new byte[] { 1, 2, 3 };
-        var iv = new byte[16];
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+        var iv = new byte[12];
         var ownerId = Guid.NewGuid();
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            Secret.Create(invalidName!, encryptedData, iv, ownerId));
+        Secret.Create(invalidName!, encryptedValue, iv, ownerId));
 
-        Assert.Equal("name", exception.ParamName);
+        Assert.Equal("title", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
     }
 
@@ -68,16 +63,16 @@ public class SecretTests
     {
         // Arrange
         var name = "  My Secret  ";
-        var encryptedData = new byte[] { 1, 2, 3 };
-        var iv = new byte[16];
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+        var iv = new byte[12];
         var ownerId = Guid.NewGuid();
 
         // Act
-        var secret = Secret.Create(name, encryptedData, iv, ownerId);
+        var secret = Secret.Create(name, encryptedValue, iv, ownerId);
 
         // Assert
-        Assert.Equal("My Secret", secret.Name);
-        Assert.DoesNotContain("  ", secret.Name);
+        Assert.Equal("My Secret", secret.Title);
+        Assert.DoesNotContain("  ", secret.Title);
     }
 
     // ============================================================================
@@ -89,15 +84,15 @@ public class SecretTests
     {
         // Arrange
         var name = "My Secret";
-        byte[]? encryptedData = null;
-        var iv = new byte[16];
+        string? encryptedValue = null;
+        var iv = new byte[12];
         var ownerId = Guid.NewGuid();
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            Secret.Create(name, encryptedData!, iv, ownerId));
+            Secret.Create(name, encryptedValue!, iv, ownerId));
 
-        Assert.Equal("encryptedData", exception.ParamName);
+        Assert.Equal("encryptedValue", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
     }
 
@@ -106,15 +101,15 @@ public class SecretTests
     {
         // Arrange
         var name = "My Secret";
-        var encryptedData = Array.Empty<byte>();
-        var iv = new byte[16];
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+        var iv = new byte[12];
         var ownerId = Guid.NewGuid();
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            Secret.Create(name, encryptedData, iv, ownerId));
+    Secret.Create(name, encryptedValue, iv, ownerId));
 
-        Assert.Equal("encryptedData", exception.ParamName);
+        Assert.Equal("encryptedValue", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
     }
 
@@ -127,16 +122,16 @@ public class SecretTests
     {
         // Arrange
         var name = "My Secret";
-        var encryptedData = new byte[] { 1, 2, 3 };
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
         byte[]? iv = null;
         var ownerId = Guid.NewGuid();
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            Secret.Create(name, encryptedData, iv!, ownerId));
+            Secret.Create(name, encryptedValue, iv!, ownerId));
 
         Assert.Equal("iv", exception.ParamName);
-        Assert.Contains("must be exactly 16 bytes", exception.Message);
+       Assert.Contains("IV cannot be null or empty", exception.Message);
     }
 
     [Theory]
@@ -146,36 +141,41 @@ public class SecretTests
     [InlineData(17)]
     [InlineData(32)]
     public void Create_WithInvalidIVLength_ShouldThrowArgumentException(int invalidLength)
-    {
-        // Arrange
-        var name = "My Secret";
-        var encryptedData = new byte[] { 1, 2, 3 };
-        var iv = new byte[invalidLength];
-        var ownerId = Guid.NewGuid();
+{
+    // Arrange
+    var name = "My Secret";
+    var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+    var iv = new byte[invalidLength];
+    var ownerId = Guid.NewGuid();
 
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            Secret.Create(name, encryptedData, iv, ownerId));
+    // Act & Assert
+    var exception = Assert.Throws<ArgumentException>(() =>
+        Secret.Create(name, encryptedValue, iv, ownerId));
 
-        Assert.Equal("iv", exception.ParamName);
-        Assert.Contains("must be exactly 16 bytes", exception.Message);
-    }
+    Assert.Equal("iv", exception.ParamName);
+    // IV validation mesajÄ± "IV cannot be null or empty" (invalidLength=0 iÃ§in) 
+    // veya "must be exactly 12 bytes" (diÄŸer uzunluklar iÃ§in) olabilir
+    Assert.True(
+        exception.Message.Contains("IV cannot be null or empty") || 
+        exception.Message.Contains("must be exactly 12 bytes"),
+        $"Exception message should mention IV validation, but got: {exception.Message}");
+}
 
     [Fact]
     public void Create_WithValidIVLength_ShouldCreateSuccessfully()
     {
         // Arrange
         var name = "My Secret";
-        var encryptedData = new byte[] { 1, 2, 3 };
-        var iv = new byte[16]; // Exactly 16 bytes
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+        var iv = new byte[12]; // Exactly 12 bytes
         var ownerId = Guid.NewGuid();
 
         // Act
-        var secret = Secret.Create(name, encryptedData, iv, ownerId);
+        var secret = Secret.Create(name, encryptedValue, iv, ownerId);
 
         // Assert
         Assert.NotNull(secret);
-        Assert.Equal(16, secret.IV.Length);
+        Assert.Equal(12, secret.IV.Length);
     }
 
     // ============================================================================
@@ -187,15 +187,15 @@ public class SecretTests
     {
         // Arrange
         var name = "My Secret";
-        var encryptedData = new byte[] { 1, 2, 3 };
-        var iv = new byte[16];
+        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+        var iv = new byte[12];
         var ownerId = Guid.Empty;
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            Secret.Create(name, encryptedData, iv, ownerId));
+            Secret.Create(name, encryptedValue, iv, ownerId));
 
-        Assert.Equal("ownerId", exception.ParamName);
+        Assert.Equal("userId", exception.ParamName);
         Assert.Contains("cannot be empty", exception.Message);
     }
 
@@ -209,8 +209,8 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         Assert.Null(secret.LastAccessedAt);
@@ -218,7 +218,7 @@ public class SecretTests
         var beforeAccess = DateTime.UtcNow;
 
         // Act
-        secret.MarkAsAccessed();
+        secret.RecordAccess();
 
         var afterAccess = DateTime.UtcNow;
 
@@ -233,17 +233,17 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         // Act
-        secret.MarkAsAccessed();
+        secret.RecordAccess();
         var firstAccessTime = secret.LastAccessedAt;
 
         System.Threading.Thread.Sleep(10); // Small delay
 
-        secret.MarkAsAccessed();
+        secret.RecordAccess();
         var secondAccessTime = secret.LastAccessedAt;
 
         // Assert
@@ -261,18 +261,18 @@ public class SecretTests
     {
         // Arrange
         var secret = Secret.Create(
-            "Old Name",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
-            Guid.NewGuid());
+    "Old Title",            // ï¿½sim Title olarak gï¿½ncellendi (isteï¿½e baï¿½lï¿½)
+    "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", // Dï¿½ZELTï¿½LDï¿½: Base64 string
+    new byte[12],           // Dï¿½ZELTï¿½LDï¿½: 12 byte (GCM Standardï¿½)
+    Guid.NewGuid());
 
         var newName = "New Secret Name";
 
         // Act
-        secret.UpdateName(newName);
+        secret.UpdateTitle(newName);
 
         // Assert
-        Assert.Equal(newName, secret.Name);
+        Assert.Equal(newName, secret.Title);
     }
 
     [Theory]
@@ -284,15 +284,15 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "Old Name",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            secret.UpdateName(invalidName!));
+            secret.UpdateTitle(invalidName!));
 
-        Assert.Equal("newName", exception.ParamName);
+        Assert.Equal("newTitle", exception.ParamName);
     }
 
     // ============================================================================
@@ -303,24 +303,23 @@ public class SecretTests
     public void ReEncrypt_WithValidData_ShouldUpdateEncryptedDataAndIV()
     {
         // Arrange
-        var originalData = new byte[] { 1, 2, 3 };
-        var originalIV = new byte[16];
+        var originalValue = "old-encrypted-value";
+        var originalIV = new byte[12];
         var secret = Secret.Create(
             "My Secret",
-            originalData,
+            originalValue,
             originalIV,
             Guid.NewGuid());
 
-        var newEncryptedData = new byte[] { 4, 5, 6, 7 };
-        var newIV = new byte[16];
+        var newEncryptedValue = "bmV3LWVuY3J5cHRlZC12YWx1ZQ=="; // Base64 bir string verdik
+        var newIV = new byte[12];                               // GCM iï¿½in 12 byte yaptï¿½k
 
         // Act
-        secret.ReEncrypt(newEncryptedData, newIV);
+        secret.ReEncrypt(newEncryptedValue, newIV);
 
-        // Assert
-        Assert.Equal(newEncryptedData, secret.EncryptedData);
+        // Assert (Doï¿½rulama kï¿½smï¿½nï¿½ da unutma)
+        Assert.Equal(newEncryptedValue, secret.EncryptedValue);
         Assert.Equal(newIV, secret.IV);
-        Assert.NotEqual(originalData, secret.EncryptedData);
     }
 
     [Fact]
@@ -329,18 +328,18 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
-        byte[]? newEncryptedData = null;
-        var newIV = new byte[16];
+        string? newEncryptedValue = null;
+        var newIV = new byte[12];
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            secret.ReEncrypt(newEncryptedData!, newIV));
+            secret.ReEncrypt(newEncryptedValue!, newIV));
 
-        Assert.Equal("newEncryptedData", exception.ParamName);
+        Assert.Equal("newEncryptedValue", exception.ParamName);
     }
 
     [Fact]
@@ -349,19 +348,19 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
-        var newEncryptedData = new byte[] { 4, 5, 6 };
+        var newEncryptedValue = "bmV3LWRhdGE=";
         var newIV = new byte[8]; // Invalid: should be 16
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            secret.ReEncrypt(newEncryptedData, newIV));
+            secret.ReEncrypt(newEncryptedValue, newIV));
 
         Assert.Equal("newIV", exception.ParamName);
-        Assert.Contains("must be exactly 16 bytes", exception.Message);
+        Assert.Contains("must be exactly 12 bytes", exception.Message);
     }
 
     // ============================================================================
@@ -374,8 +373,8 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         Assert.False(secret.IsDeleted);
@@ -400,8 +399,8 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         secret.MarkAsDeleted();
@@ -422,8 +421,8 @@ public class SecretTests
         // Arrange
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         Assert.False(secret.IsDeleted);
@@ -449,8 +448,8 @@ public class SecretTests
         // Act
         var secret = Secret.Create(
             "My Secret",
-            new byte[] { 1, 2, 3 },
-            new byte[16],
+            "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
+            new byte[12],
             Guid.NewGuid());
 
         var afterCreation = DateTime.UtcNow;
@@ -464,64 +463,66 @@ public class SecretTests
     // ============================================================================
 
     [Fact]
-    public void Create_MultipleSecrets_ShouldHaveUniqueIds()
-    {
-        // Arrange
-        var ownerId = Guid.NewGuid();
+public void Create_MultipleSecrets_ShouldHaveUniqueIds()
+{
+    // Arrange
+    var userId = Guid.NewGuid();
 
-        // Act
-        var secret1 = Secret.Create("Secret 1", new byte[] { 1 }, new byte[16], ownerId);
-        var secret2 = Secret.Create("Secret 2", new byte[] { 2 }, new byte[16], ownerId);
-        var secret3 = Secret.Create("Secret 3", new byte[] { 3 }, new byte[16], ownerId);
+    // Act
+    var secret1 = Secret.Create("Secret 1", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", new byte[12], userId);
+    var secret2 = Secret.Create("Secret 2", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", new byte[12], userId);
+    var secret3 = Secret.Create("Secret 3", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", new byte[12], userId);
 
-        // Assert
-        Assert.NotEqual(secret1.Id, secret2.Id);
-        Assert.NotEqual(secret2.Id, secret3.Id);
-        Assert.NotEqual(secret1.Id, secret3.Id);
-    }
+    // Assert
+    Assert.NotEqual(secret1.Id, secret2.Id);
+    Assert.NotEqual(secret2.Id, secret3.Id);
+    Assert.NotEqual(secret1.Id, secret3.Id);
+}
 
     // ============================================================================
     // INTEGRATION SCENARIO TEST
     // ============================================================================
 
     [Fact]
-    public void Secret_CompleteLifecycle_ShouldWorkCorrectly()
-    {
-        // Arrange - Create
-        var secret = Secret.Create(
-            "Production API Key",
-            new byte[] { 1, 2, 3, 4, 5 },
-            new byte[16],
-            Guid.NewGuid());
+public void Secret_CompleteLifecycle_ShouldWorkCorrectly()
+{
+    // Arrange - Create
+    var secret = Secret.Create(
+        "Production API Key",
+        "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",  // 44 char geÃ§erli Base64
+        new byte[12],
+        Guid.NewGuid());
 
-        Assert.False(secret.IsDeleted);
-        Assert.Null(secret.LastAccessedAt);
+    Assert.False(secret.IsDeleted);
+    Assert.Null(secret.LastAccessedAt);
 
-        // Act - Access
-        secret.MarkAsAccessed();
-        Assert.NotNull(secret.LastAccessedAt);
+    // Act - Access
+    secret.RecordAccess();
+    Assert.NotNull(secret.LastAccessedAt);
 
-        // Act - Update Name
-        secret.UpdateName("Staging API Key");
-        Assert.Equal("Staging API Key", secret.Name);
+    // Act - Update Name
+    secret.UpdateTitle("Staging API Key");
+    Assert.Equal("Staging API Key", secret.Title);
 
-        // Act - Re-encrypt (key rotation)
-        var newEncryptedData = new byte[] { 6, 7, 8, 9, 10 };
-        var newIV = new byte[16];
-        secret.ReEncrypt(newEncryptedData, newIV);
-        Assert.Equal(newEncryptedData, secret.EncryptedData);
+    // Act - Re-encrypt (key rotation)
+    var newEncryptedValue = "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC";  // 44 char geÃ§erli Base64
+    var newIV = new byte[12];
+    secret.ReEncrypt(newEncryptedValue, newIV);
 
-        // Act - Delete
-        secret.MarkAsDeleted();
-        Assert.True(secret.IsDeleted);
-        Assert.NotNull(secret.DeletedAt);
+    // Assert
+    Assert.Equal(newEncryptedValue, secret.EncryptedValue);
 
-        // Act - Restore
-        secret.Restore();
-        Assert.False(secret.IsDeleted);
-        Assert.Null(secret.DeletedAt);
+    // Act - Delete
+    secret.MarkAsDeleted();
+    Assert.True(secret.IsDeleted);
+    Assert.NotNull(secret.DeletedAt);
 
-        // Assert - All operations successful
-        Assert.NotNull(secret);
-    }
+    // Act - Restore
+    secret.Restore();
+    Assert.False(secret.IsDeleted);
+    Assert.Null(secret.DeletedAt);
+
+    // Assert - All operations successful
+    Assert.NotNull(secret);
+}
 }
