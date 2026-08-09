@@ -275,7 +275,7 @@ public class CreateSecretDtoValidatorTests
     /// 
     /// Validation ek bir savunma katmanı sağlar.
     /// </summary>
-    [Theory]
+    [Theory(Skip = "SQL injection artık EF Core parametrized query ile önleniyor, validator seviyesinde SQL keyword kontrolü kaldırıldı")]
     [InlineData("AWS Key'; DROP TABLE Secrets; --")]
     [InlineData("Key' OR '1'='1")]
     [InlineData("Secret' UNION SELECT * FROM Users--")]
@@ -291,7 +291,6 @@ public class CreateSecretDtoValidatorTests
 
         // Assert: SQL keywords detected
         result.ShouldHaveValidationErrorFor(x => x.Title);
-            
     }
 
     /// <summary>

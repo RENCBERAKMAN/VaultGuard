@@ -68,7 +68,7 @@ public class RegisterDtoValidatorTests
     [Theory]
     [InlineData("user@example.com", "validuser", "ValidPass123!", "ValidPass123!")]
     [InlineData("test.user+tag@domain.co.uk", "test_user", "MyP@ssword99", "MyP@ssword99")]
-    [InlineData("admin@company.org", "company_admin", "C0mplex!Pass", "C0mplex!Pass")]
+    [InlineData("admin@company.org", "company_owner", "C0mplex!Pass", "C0mplex!Pass")]
     public void Validate_WithVariousValidInputs_ShouldPass(
         string email, string username, string password, string confirmPassword)
     {

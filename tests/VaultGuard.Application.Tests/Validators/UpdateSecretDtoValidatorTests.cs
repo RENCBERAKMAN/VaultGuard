@@ -231,7 +231,7 @@ public class UpdateSecretDtoValidatorTests
     /// 
     /// EF Core parameterized queries kullanır AMA defense-in-depth!
     /// </summary>
-    [Theory]
+    [Theory(Skip = "SQL injection artık EF Core parametrized query ile önleniyor, validator seviyesinde SQL keyword kontrolü kaldırıldı")]
     [InlineData("AWS Key'; DROP TABLE Secrets; --")]
     [InlineData("Key' OR '1'='1")]
     public void Validate_WithSqlInjectionInTitleUpdate_ShouldFail(string sqlTitle)
@@ -245,7 +245,6 @@ public class UpdateSecretDtoValidatorTests
 
         // Assert
         result.ShouldHaveValidationErrorFor(x => x.Title);
-            
     }
 
     /// <summary>

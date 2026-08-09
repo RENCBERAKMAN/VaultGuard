@@ -78,8 +78,8 @@ public sealed class SecretConfiguration : IEntityTypeConfiguration<Secret>
         // ============================================================================
 
         builder.Property(s => s.IV)
-            .IsRequired()
-            .HasMaxLength(16); // AES-256, 16-byte IV gerektirir
+    .IsRequired()
+    .HasMaxLength(12);  // AES-GCM, 96-bit nonce
            
 
         // GÜVENLİK: IV (Initialization Vector) her şifreleme için benzersiz olmalı

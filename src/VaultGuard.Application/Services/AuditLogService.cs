@@ -73,9 +73,10 @@ public sealed class AuditLogService : IAuditLogService
             // Result: max 50 chars
             result = SanitizeLogInput(result, 50);
 
-            // IP address: max 45 chars (IPv6), default to "Unknown" if null
+            
+            // IP address: max 45 chars (IPv6), default to "0.0.0.0" if null (system/internal events)
             ipAddress = string.IsNullOrWhiteSpace(ipAddress)
-                ? "Unknown"
+                ? "0.0.0.0"
                 : SanitizeLogInput(ipAddress, 45);
 
             // User agent: max 500 chars, can be null
@@ -84,9 +85,9 @@ public sealed class AuditLogService : IAuditLogService
                 : SanitizeLogInput(userAgent, 500);
 
             // Additional data: max 4000 chars (with ellipsis if truncated)
-            if (!string.IsNullOrWhiteSpace(additionalData) && additionalData.Length > 4000)
+            if (!string.IsNullOrWhiteSpace(additionalData) && additionalData.Length > 2000)
             {
-                additionalData = additionalData.Substring(0, 3997) + "...";
+                additionalData = additionalData.Substring(0, 1997) + "...";
             }
 
             // ============================================================================

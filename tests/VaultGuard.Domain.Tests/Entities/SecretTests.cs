@@ -101,7 +101,7 @@ public class SecretTests
     {
         // Arrange
         var name = "My Secret";
-        var encryptedValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
+        var encryptedValue = "";
         var iv = new byte[12];
         var ownerId = Guid.NewGuid();
 
@@ -302,8 +302,7 @@ public class SecretTests
     [Fact]
     public void ReEncrypt_WithValidData_ShouldUpdateEncryptedDataAndIV()
     {
-        // Arrange
-        var originalValue = "old-encrypted-value";
+        var originalValue = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB";
         var originalIV = new byte[12];
         var secret = Secret.Create(
             "My Secret",
@@ -311,8 +310,8 @@ public class SecretTests
             originalIV,
             Guid.NewGuid());
 
-        var newEncryptedValue = "bmV3LWVuY3J5cHRlZC12YWx1ZQ=="; // Base64 bir string verdik
-        var newIV = new byte[12];                               // GCM i�in 12 byte yapt�k
+        var newEncryptedValue = "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC"; // 44 karakter geçerli Base64
+        var newIV = new byte[12];
 
         // Act
         secret.ReEncrypt(newEncryptedValue, newIV);
@@ -352,8 +351,8 @@ public class SecretTests
             new byte[12],
             Guid.NewGuid());
 
-        var newEncryptedValue = "bmV3LWRhdGE=";
-        var newIV = new byte[8]; // Invalid: should be 16
+        var newEncryptedValue = "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC";
+        var newIV = new byte[8]; // Invalid: should be 12
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>

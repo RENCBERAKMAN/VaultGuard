@@ -58,9 +58,9 @@ public sealed class Secret : BaseEntity
         string? description = null,
         DateTime? expiresAt = null)
     {
-        var validatedTitle = ValidateTitle(title);
-        var validatedEncryptedValue = ValidateEncryptedValue(encryptedValue);
-        var validatedIV = ValidateIV(iv);
+        var validatedTitle = ValidateTitle(title, nameof(title));
+        var validatedEncryptedValue = ValidateEncryptedValue(encryptedValue, nameof(encryptedValue));
+        var validatedIV = ValidateIV(iv, nameof(iv));
         var validatedUserId = ValidateUserId(userId);
         var validatedCategory = ValidateCategory(category);
         var validatedDescription = ValidateDescription(description);
@@ -89,7 +89,7 @@ public sealed class Secret : BaseEntity
 
     public void UpdateTitle(string newTitle)
     {
-        var validatedTitle = ValidateTitle(newTitle);
+        var validatedTitle = ValidateTitle(newTitle, nameof(newTitle));
         if (Title == validatedTitle) return;
         Title = validatedTitle;
         UpdateTimestamp();
@@ -113,8 +113,8 @@ public sealed class Secret : BaseEntity
 
     public void ReEncrypt(string newEncryptedValue, byte[] newIV)
     {
-        var validatedEncryptedValue = ValidateEncryptedValue(newEncryptedValue);
-        var validatedIV = ValidateIV(newIV);
+        var validatedEncryptedValue = ValidateEncryptedValue(newEncryptedValue, nameof(newEncryptedValue));
+        var validatedIV = ValidateIV(newIV, nameof(newIV));
         EncryptedValue = validatedEncryptedValue;
         IV = validatedIV;
         UpdateTimestamp();
@@ -169,17 +169,17 @@ public sealed class Secret : BaseEntity
     // PRIVATE VALIDATION METHODS
     // ============================================================================
 
-    private static string ValidateTitle(string title)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-            throw new ArgumentException("Secret title cannot be empty", nameof(title));
+    private static string ValidateTitle(string title, string paramName = "title")
+{
+    if (string.IsNullOrWhiteSpace(title))
+        throw new ArgumentException("Secret title cannot be empty", paramName);
 
-        var trimmed = title.Trim();
-        if (trimmed.Length > 200)
-            throw new ArgumentException("Secret title too long (max 200 characters)", nameof(title));
+    var trimmed = title.Trim();
+    if (trimmed.Length > 200)
+        throw new ArgumentException("Secret title too long (max 200 characters)", paramName);
 
-        return trimmed;
-    }
+    return trimmed;
+}
 
     private static string ValidateDescription(string? description)
     {
@@ -193,26 +193,26 @@ public sealed class Secret : BaseEntity
         return trimmed;
     }
 
-    private static string ValidateEncryptedValue(string encryptedValue)
+    private static string ValidateEncryptedValue(string encryptedValue, string paramName = "encryptedValue")
     {
-        if (string.IsNullOrWhiteSpace(encryptedValue))
-            throw new ArgumentException("Encrypted value cannot be empty", nameof(encryptedValue));
+    if (string.IsNullOrWhiteSpace(encryptedValue))
+        throw new ArgumentException("Encrypted value cannot be empty", paramName);
 
-        var trimmed = encryptedValue.Trim();
-        if (trimmed.Length % 4 != 0)
-            throw new ArgumentException("Invalid encrypted value format (not Base64)", nameof(encryptedValue));
-        if (trimmed.Length < 44)
-            throw new ArgumentException("Encrypted value too short - must be AES-256-GCM ciphertext", nameof(encryptedValue));
+    var trimmed = encryptedValue.Trim();
+    if (trimmed.Length % 4 != 0)
+            throw new ArgumentException("Invalid encrypted value format (not Base64)", paramName);
+    if (trimmed.Length < 44)
+            throw new ArgumentException("Encrypted value too short - must be AES-256-GCM ciphertext", paramName);
 
         return trimmed;
     }
 
-    private static byte[] ValidateIV(byte[] iv)
+    private static byte[] ValidateIV(byte[] iv, string paramName = "iv")
     {
         if (iv == null || iv.Length == 0)
-            throw new ArgumentException("IV cannot be null or empty", nameof(iv));
+            throw new ArgumentException("IV cannot be null or empty", paramName);
         if (iv.Length != 12)
-            throw new ArgumentException("IV must be exactly 12 bytes (96 bits) for AES-GCM", nameof(iv));
+            throw new ArgumentException("IV must be exactly 12 bytes (96 bits) for AES-GCM", paramName);
 
         return iv;
     }

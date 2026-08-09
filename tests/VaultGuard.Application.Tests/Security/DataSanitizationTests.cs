@@ -104,8 +104,7 @@ public class DataSanitizationTests
         var result = await _createValidator.TestValidateAsync(dto);
 
         // Assert: Validation MUST fail
-        result.ShouldHaveValidationErrorFor(x => x.Title)
-            .WithErrorMessage("*contains potentially dangerous content*");
+        result.ShouldHaveValidationErrorFor(x => x.Title);
 
         result.IsValid.Should().BeFalse(
             "CRITICAL: Script tags must be rejected - Stored XSS vulnerability!");

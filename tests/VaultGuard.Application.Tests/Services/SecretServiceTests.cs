@@ -78,7 +78,7 @@ public class SecretServiceTests
         {
             Title = "AWS API Key",
             RawValue = "AKIAIOSFODNN7EXAMPLE",
-            Category = "Cloud",
+            Category = "ApiKey",
             Description = "Production AWS credentials"
         };
 
@@ -98,10 +98,10 @@ public class SecretServiceTests
         var result = await _secretService.CreateSecretAsync(dto, userId);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
         result.Data.Should().NotBeNull();
         result.Data!.Title.Should().Be("AWS API Key");
-        result.Data.Category.Should().Be("Cloud");
+        result.Data.Category.Should().Be("ApiKey");
 
         // Repository'ye doğru secret eklendi mi?
         _secretRepositoryMock.Verify(
@@ -263,11 +263,14 @@ public class SecretServiceTests
             ValidCipherA,
             new byte[12],
             userId,
-            expiresAt: DateTime.UtcNow.AddDays(-1));                    // Expired!
+            expiresAt: DateTime.UtcNow.AddMilliseconds(50));            // Will expire very soon
 
         _secretRepositoryMock
             .Setup(x => x.GetByIdAsync(secretId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(secret);
+
+        // Wait for the secret to actually expire
+        await Task.Delay(100);
 
         // Act
         var result = await _secretService.GetDecryptedValueAsync(secretId, userId);

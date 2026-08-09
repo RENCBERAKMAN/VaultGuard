@@ -40,6 +40,10 @@ public sealed class LoginDtoValidator : AbstractValidator<LoginDto>
             .WithMessage("Email address is required")
             .EmailAddress()
             .WithMessage("Please provide a valid email address")
+            .Must(email => string.IsNullOrEmpty(email) || !email.Trim().Contains(' '))
+            .WithMessage("Email address cannot contain spaces")
+            .Must(email => string.IsNullOrEmpty(email) || !email.Contains('<') && !email.Contains('>'))
+            .WithMessage("Email address contains invalid characters (security: XSS prevention)")
             .MaximumLength(100)
             .WithMessage("Email address is too long (security: DoS prevention)");
 

@@ -52,7 +52,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
     email: "test@vaultguard.com",
     username: "testuser",
-    passwordHash: "hashed_password...",
+    passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
     role: "User");        // ✅ YENİ: Enum kullanıldı
 
         // Act
@@ -85,7 +85,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user1 = User.Create(
             email: "duplicate@test.com",
             username: "user1",
-            passwordHash: "hash1_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");
 
         await _repository.AddAsync(user1);
@@ -95,7 +95,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user2 = User.Create(
             email: "duplicate@test.com", // SAME EMAIL!
             username: "user2",
-            passwordHash: "hash2_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");
 
         // Act & Assert
@@ -127,7 +127,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user1 = User.Create(
             email: "user1@test.com",
             username: "admin",
-            passwordHash: "hash1_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");
 
         await _repository.AddAsync(user1);
@@ -155,7 +155,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "find@test.com",
             username: "findme",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");           // ✅ DÜZELDİ: "User" yerine "User"
 
         await _repository.AddAsync(user);
@@ -196,7 +196,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "user@test.com",
             username: "uniqueuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");        // ✅ DÜZELDİ: String yerine Enum kullanıldı
 
         await _repository.AddAsync(user);
@@ -237,7 +237,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "id@test.com",
             username: "idtest",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");        // ✅ DÜZELDİ: "User" yerine "User" (Enum)
 
         await _repository.AddAsync(user);
@@ -288,14 +288,14 @@ public class UserRepositoryTests : RepositoryTestBase
         var activeUser = User.Create(
             email: "active@test.com",
             username: "activeuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");
 
         // Arrange: Inactive user - DÜZELDİ: Salt ve Enum eklendi
         var inactiveUser = User.Create(
             email: "inactive@test.com",
             username: "inactiveuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");
 
         inactiveUser.Deactivate(); // Kullanıcıyı pasif hale getir
@@ -324,7 +324,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "deactivate@test.com",
             username: "deactivateuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");                 // ✅ DÜZELDİ: Enum kullanıldı
 
         await _repository.AddAsync(user);
@@ -353,7 +353,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "reactivate@test.com",
             username: "reactivateuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");
         user.Deactivate();
 
@@ -386,7 +386,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "old@test.com",
             username: "updateuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");                  // ✅ DÜZELDİ: Enum kullanıldı
 
         await _repository.AddAsync(user);
@@ -415,7 +415,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "login@test.com",
             username: "loginuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");           // ✅ DÜZELDİ: Enum kullanıldı
 
         await _repository.AddAsync(user);
@@ -454,7 +454,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "delete@test.com",
             username: "deleteuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");             // ✅ DÜZELDİ: Enum kullanıldı
 
         await _repository.AddAsync(user);
@@ -484,7 +484,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "exists@test.com",
             username: "existsuser",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");             // ✅ DÜZELDİ: Enum kullanıldı
 
         await _repository.AddAsync(user);
@@ -522,7 +522,7 @@ public class UserRepositoryTests : RepositoryTestBase
         var user = User.Create(
             email: "user@test.com",
             username: "existingusername",
-            passwordHash: "hash_12345678901234567890",
+            passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
             role: "User");                  // ✅ DÜZELDİ: "User" yerine "User" (Enum)
 
         await _repository.AddAsync(user);
@@ -566,7 +566,7 @@ public class UserRepositoryTests : RepositoryTestBase
             var user = User.Create(
                 email: $"user{i}@test.com",
                 username: $"user{i}",
-                passwordHash: "hash_12345678901234567890",
+                passwordHash: "$2a$11$K9Qz3vXY8pL2mN7wR4tHVOxJ5cB1dF6gH8iJ0kL2mN4oP6qR8sT0u",
                 role: "User");            // Enum kullanımı
 
             await _repository.AddAsync(user);

@@ -93,10 +93,13 @@ public sealed class SecretService : ISecretService
                 return new ErrorDataResult<SecretDto>($"Encryption failed: {ex.Message}");
             }
 
-            // 5. GENERATE RANDOM IV (12 bytes for AES-GCM)
+            // 5. EXTRACT REAL NONCE FROM ENCRYPTED VALUE
+            // AesEncryptionService çıktısı: Nonce(12) + Ciphertext + Tag(16) formatında Base64'tür.
+            // Secret.IV alanının gerçek (decrypt'te kullanılabilir) veriyle tutarlı olması için
+            // rastgele/sahte IV üretmek yerine gerçek nonce'u buradan çıkarıyoruz.
+            var encryptedRawBytes = Convert.FromBase64String(encryptedBase64);
             var iv = new byte[12];
-            System.Security.Cryptography.RandomNumberGenerator.Fill(iv);
-
+            Buffer.BlockCopy(encryptedRawBytes, 0, iv, 0, 12);
             // 6. CREATE DOMAIN ENTITY
             var secret = Secret.Create(
                 title: dto.Title,
@@ -485,9 +488,10 @@ public sealed class SecretService : ISecretService
                     if (string.IsNullOrWhiteSpace(newEncryptedValue))
                         throw new InvalidOperationException("Encryption resulted in empty value");
 
-                    // Generate new IV
+                    // Extract real nonce from re-encrypted value (aynı gerekçe: CreateSecretAsync'e bak)
+                    var newEncryptedRawBytes = Convert.FromBase64String(newEncryptedValue);
                     var newIv = new byte[12];
-                    System.Security.Cryptography.RandomNumberGenerator.Fill(newIv);
+                    Buffer.BlockCopy(newEncryptedRawBytes, 0, newIv, 0, 12);
 
                     secret.ReEncrypt(newEncryptedValue, newIv);
                     changedFields.Add("Value");

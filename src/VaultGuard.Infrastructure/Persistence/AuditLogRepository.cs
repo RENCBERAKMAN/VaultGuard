@@ -129,18 +129,18 @@ public sealed class AuditLogRepository : IAuditLogRepository
 
     /// <inheritdoc/>
     public async Task<IEnumerable<AuditLog>> GetByResourceIdAsync(
-        Guid resourceId,
-        CancellationToken cancellationToken = default)
-    {
-        // PERFORMANCE: AsNoTracking() for read-only query
-        // FILTER: By ResourceId (SecretId, UserId, etc.)
-        // SORTING: Order by Timestamp DESC (newest first)
-        return await _context.AuditLogs
-            .AsNoTracking()
-            .Where(a => a.ResourceId == resourceId.ToString())
-            .OrderByDescending(a => a.Timestamp)
-            .ToListAsync(cancellationToken);
-    }
+    Guid resourceId,
+    CancellationToken cancellationToken = default)
+{
+    // PERFORMANCE: AsNoTracking() for read-only query
+    // FILTER: By EntityId (SecretId, UserId, etc.)
+    // SORTING: Order by Timestamp DESC (newest first)
+    return await _context.AuditLogs
+        .AsNoTracking()
+        .Where(a => a.EntityId == resourceId)
+        .OrderByDescending(a => a.Timestamp)
+        .ToListAsync(cancellationToken);
+}
 
     /// <inheritdoc/>
     public async Task<int> GetTotalCountAsync(
