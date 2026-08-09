@@ -58,9 +58,11 @@ public sealed class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .WithMessage("Email address is required for account creation")
             .EmailAddress()
             .WithMessage("Invalid email address format. Please provide a valid email (e.g., user@example.com)")
+            .Must(email => string.IsNullOrEmpty(email) || !email.Trim().Contains(' '))
+            .WithMessage("Email address cannot contain spaces")
             .MaximumLength(100)
             .WithMessage("Email address cannot exceed 100 characters (security: DoS prevention)")
-            .Must(email => !ContainsScriptTags(email))
+            .Must(email => !string.IsNullOrEmpty(email) && !ContainsScriptTags(email))
             .WithMessage("Email address contains invalid characters (security: XSS prevention)");
 
         // ====================================================================
@@ -71,14 +73,14 @@ public sealed class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .WithMessage("Username is required for account creation")
             .Length(3, 50)
             .WithMessage("Username must be between 3 and 50 characters (security: prevent enumeration + DoS)")
-            .Must(username => UsernamePattern.IsMatch(username))
+            .Must(username => !string.IsNullOrEmpty(username) && UsernamePattern.IsMatch(username))
             .WithMessage("Username can only contain letters (a-z, A-Z), numbers (0-9), dots (.), underscores (_), and hyphens (-). " +
                         "No spaces or special characters allowed (security: injection prevention)")
-            .Must(username => !username.StartsWith(".") && !username.EndsWith("."))
+            .Must(username => string.IsNullOrEmpty(username) || (!username.StartsWith(".") && !username.EndsWith(".")))
             .WithMessage("Username cannot start or end with a dot (security: path traversal prevention)")
-            .Must(username => !username.Contains(".."))
+            .Must(username => string.IsNullOrEmpty(username) || !username.Contains(".."))
             .WithMessage("Username cannot contain consecutive dots (security: path traversal prevention)")
-            .Must(username => !ContainsReservedKeywords(username))
+            .Must(username => string.IsNullOrEmpty(username) || !ContainsReservedKeywords(username))
             .WithMessage("Username contains reserved system keywords and cannot be used (security: privilege escalation prevention)");
 
         // ====================================================================
@@ -91,19 +93,19 @@ public sealed class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .WithMessage("Password must be at least 8 characters long (security: OWASP/NIST recommendation is 12+, but 8 minimum)")
             .MaximumLength(128)
             .WithMessage("Password cannot exceed 128 characters (security: DoS prevention)")
-            .Must(password => PasswordComplexityPattern.IsMatch(password))
+            .Must(password => !string.IsNullOrEmpty(password) && PasswordComplexityPattern.IsMatch(password))
             .WithMessage("Password must contain at least: " +
                         "1 uppercase letter (A-Z), " +
                         "1 lowercase letter (a-z), " +
                         "1 digit (0-9), " +
                         "1 special character (!@#$%^&*()-_=+[]{}|;:,.<>?) " +
                         "(security: OWASP complexity requirements)")
-            .Must(password => !WeakPasswords.Contains(password))
+            .Must(password => string.IsNullOrEmpty(password) || !WeakPasswords.Contains(password))
             .WithMessage("Password is too common and easily guessable. Please choose a stronger password " +
                         "(security: prevent password spraying attacks)")
-            .Must((dto, password) => !password.Contains(dto.Username, StringComparison.OrdinalIgnoreCase))
+            .Must((dto, password) => string.IsNullOrEmpty(password) || string.IsNullOrEmpty(dto.Username) || !password.Contains(dto.Username, StringComparison.OrdinalIgnoreCase))
             .WithMessage("Password cannot contain your username (security: prevent predictable passwords)")
-            .Must((dto, password) => !password.Contains(dto.Email.Split('@')[0], StringComparison.OrdinalIgnoreCase))
+            .Must((dto, password) => string.IsNullOrEmpty(password) || string.IsNullOrEmpty(dto.Email) || !password.Contains(dto.Email.Split('@')[0], StringComparison.OrdinalIgnoreCase))
             .WithMessage("Password cannot contain parts of your email address (security: prevent predictable passwords)");
 
         // ====================================================================

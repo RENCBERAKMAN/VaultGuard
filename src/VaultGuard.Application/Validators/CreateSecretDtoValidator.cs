@@ -30,7 +30,7 @@ public sealed class CreateSecretDtoValidator : AbstractValidator<CreateSecretDto
 {
     // XSS detection pattern (more comprehensive than RegisterDto)
     private static readonly Regex HtmlScriptPattern = new(
-        @"<script|</script>|javascript:|onerror=|onload=|<iframe|<object|<embed|<img|<svg|<link|<meta|<style",
+        @"<script|</script>|javascript:|on\w+\s*=|<iframe|<object|<embed|<img|<svg|<link|<meta|<style|<input|<body|<div",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
         TimeSpan.FromMilliseconds(100));
 
@@ -44,12 +44,10 @@ public sealed class CreateSecretDtoValidator : AbstractValidator<CreateSecretDto
             .WithMessage("Secret title is required for organization and identification")
             .Length(3, 200)
             .WithMessage("Secret title must be between 3 and 200 characters (security: prevent abuse + ensure usability)")
-            .Must(title => !HtmlScriptPattern.IsMatch(title))
+            .Must(title => string.IsNullOrEmpty(title) || !HtmlScriptPattern.IsMatch(title))
             .WithMessage("Secret title contains potentially dangerous HTML or script tags (security: XSS prevention). " +
                         "Please use plain text only")
-            .Must(title => !ContainsSqlKeywords(title))
-            .WithMessage("Secret title contains SQL keywords that could indicate an injection attempt (security: defense in depth)")
-            .Must(title => title.Trim() == title)
+            .Must(title => string.IsNullOrEmpty(title) || title.Trim() == title)
             .WithMessage("Secret title cannot start or end with whitespace (data quality: prevent accidental spaces)");
 
         // ====================================================================
@@ -62,7 +60,7 @@ public sealed class CreateSecretDtoValidator : AbstractValidator<CreateSecretDto
             .WithMessage("Secret value cannot exceed 10,000 characters (10KB limit). " +
                         "This limit prevents storage exhaustion and memory-based DoS attacks. " +
                         "For larger secrets, consider splitting into multiple entries")
-            .Must(rawValue => rawValue.Trim().Length > 0)
+            .Must(rawValue => !string.IsNullOrEmpty(rawValue) && rawValue.Trim().Length > 0)
             .WithMessage("Secret value cannot be empty or consist only of whitespace");
 
         // ====================================================================

@@ -404,7 +404,7 @@ public class RateLimitingMiddleware
     /// 
     /// Thread-safe field'lar kullanılır (Interlocked.Increment için).
     /// </summary>
-    private class RateLimitData
+    internal class RateLimitData
     {
         /// <summary>
         /// Zaman penceresi içindeki request sayısı.

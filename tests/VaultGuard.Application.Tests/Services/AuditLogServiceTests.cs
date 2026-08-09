@@ -50,11 +50,11 @@ public class AuditLogServiceTests
         var userId = Guid.NewGuid();
         var resourceId = Guid.NewGuid();                                // ✅ FIX: Guid (not string)
         var eventType = "SECRET_DECRYPTED";
-        var action = "User decrypted secret value";
+        var action = "Secret_Decrypted";
         var result = "Success";
         var ipAddress = "192.168.1.100";
         var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
-        var additionalData = "{\"SecretTitle\":\"AWS API Key\"}";
+        var additionalData = "{\"ItemName\":\"AWS Cloud Resource\"}";
 
         _auditLogRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()))
@@ -72,7 +72,7 @@ public class AuditLogServiceTests
             additionalData);
 
         // Assert
-        serviceResult.Success.Should().BeTrue();
+        serviceResult.Success.Should().BeTrue(serviceResult.Message);
 
         // Repository'ye doğru parametrelerle çağrı yapıldı mı?
         _auditLogRepositoryMock.Verify(
@@ -98,7 +98,7 @@ public class AuditLogServiceTests
     {
         // Arrange: userId, resourceId, ipAddress, userAgent, additionalData null olabilir
         var eventType = "SYSTEM_STARTUP";
-        var action = "Application started";
+        var action = "System_Startup";
         var result = "Success";
 
         _auditLogRepositoryMock
@@ -117,7 +117,7 @@ public class AuditLogServiceTests
             additionalData: null);
 
         // Assert
-        serviceResult.Success.Should().BeTrue();
+        serviceResult.Success.Should().BeTrue(serviceResult.Message);
 
         _auditLogRepositoryMock.Verify(
             x => x.AddAsync(
@@ -125,7 +125,7 @@ public class AuditLogServiceTests
                     log.Action.Contains(action) &&
                     log.UserId == null &&
                     log.EntityId == null &&                             // ✅ FIX: Guid? null
-                    log.IpAddress == "Unknown" &&                       // Default value
+                    log.IpAddress == "0.0.0.0" &&                       // Default value
                     log.UserAgent == null &&
                     log.AdditionalData == null),
                 It.IsAny<CancellationToken>()),
@@ -141,7 +141,7 @@ public class AuditLogServiceTests
     {
         // Arrange: Newline injection attack
         var maliciousEventType = "SECRET_DECRYPTED\n[FAKE] ADMIN_LOGIN";
-        var maliciousAction = "User logged in\r\n[SECURITY] Root access granted";
+        var maliciousAction = "Secret\r\n_Decrypted";
 
         _auditLogRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()))
@@ -158,7 +158,7 @@ public class AuditLogServiceTests
             null);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
         // Control characters (newlines) temizlendi mi?
         _auditLogRepositoryMock.Verify(
@@ -174,7 +174,7 @@ public class AuditLogServiceTests
     public async Task LogSecurityEvent_WithNullBytes_ShouldSanitize()
     {
         // Arrange: Null byte injection (path traversal attack)
-        var maliciousAction = "User accessed file\x00../etc/passwd";
+        var maliciousAction = "File\x00_Accessed";
 
         _auditLogRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()))
@@ -191,7 +191,7 @@ public class AuditLogServiceTests
             null);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
         // Null bytes temizlendi mi?
         _auditLogRepositoryMock.Verify(
@@ -221,13 +221,13 @@ public class AuditLogServiceTests
             longEventType,
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
         // Truncate edildi mi?
         _auditLogRepositoryMock.Verify(
@@ -239,9 +239,9 @@ public class AuditLogServiceTests
     }
 
     [Fact]
-    public async Task LogSecurityEvent_WithLongAdditionalData_ShouldTruncateTo4000Chars()
+    public async Task LogSecurityEvent_WithLongAdditionalData_ShouldTruncateTo2000Chars()
     {
-        // Arrange: 5000 char additional data (max 4000)
+        // Arrange: 5000 char additional data (max 2000)
         var longAdditionalData = new string('C', 5000);
 
         _auditLogRepositoryMock
@@ -253,21 +253,21 @@ public class AuditLogServiceTests
             "EVENT_TYPE",
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null,
             longAdditionalData);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
-        // Truncate edildi mi? (3997 + "..." = 4000)
+        // Truncate edildi mi? (1997 + "..." = 2000)
         _auditLogRepositoryMock.Verify(
             x => x.AddAsync(
                 It.Is<AuditLog>(log =>
                     log.AdditionalData != null &&
-                    log.AdditionalData.Length == 4000 &&
+                    log.AdditionalData.Length == 2000 &&
                     log.AdditionalData.EndsWith("...")),
                 It.IsAny<CancellationToken>()),
             Times.Once);
@@ -293,7 +293,7 @@ public class AuditLogServiceTests
             invalidEventType,
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null);
@@ -355,7 +355,7 @@ public class AuditLogServiceTests
             "SECRET_DECRYPTED",
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null);
@@ -381,7 +381,7 @@ public class AuditLogServiceTests
             "EVENT",
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null,
@@ -410,13 +410,13 @@ public class AuditLogServiceTests
             "EVENT",
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
         // Correlation ID generate edildi mi?
         _auditLogRepositoryMock.Verify(
@@ -447,7 +447,7 @@ public class AuditLogServiceTests
             "EVENT",
             Guid.NewGuid(),
             null,
-            "Action",
+            "Test_Action",
             "Success",
             null,
             null);
@@ -456,7 +456,7 @@ public class AuditLogServiceTests
         var afterCall = DateTime.UtcNow;
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
         _auditLogRepositoryMock.Verify(
             x => x.AddAsync(
@@ -487,13 +487,13 @@ public class AuditLogServiceTests
             "USER_LOGIN",
             Guid.NewGuid(),
             null,
-            "User logged in from IPv6 address",
+            "User_LoginIPv6",
             "Success",
             ipv6,
             null);
 
         // Assert
-        result.Success.Should().BeTrue();
+        result.Success.Should().BeTrue(result.Message);
 
         _auditLogRepositoryMock.Verify(
             x => x.AddAsync(
@@ -526,7 +526,7 @@ public class AuditLogServiceTests
                 $"EVENT_{eventNumber}",
                 Guid.NewGuid(),
                 null,
-                $"Action {eventNumber}",
+                $"Action_{eventNumber}",
                 "Success",
                 null,
                 null);

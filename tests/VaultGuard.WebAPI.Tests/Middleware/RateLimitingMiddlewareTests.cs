@@ -68,10 +68,9 @@ public class RateLimitingMiddlewareTests
         // Assert: 200 OK (ge�ti)
         context.Response.StatusCode.Should().Be(200);
 
-        // Cache'te saya� olu�tu mu?
         var cacheKey = GetRateLimitKey("192.168.1.100");
-        _memoryCache.TryGetValue(cacheKey, out int requestCount).Should().BeTrue();
-        requestCount.Should().Be(1);
+        _memoryCache.TryGetValue(cacheKey, out RateLimitingMiddleware.RateLimitData? rateLimitData).Should().BeTrue();
+        rateLimitData!.RequestCount.Should().Be(1);
     }
 
     [Fact]

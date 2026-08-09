@@ -13,9 +13,9 @@ using Xunit;
 namespace VaultGuard.WebAPI.Tests.Middleware;
 
 /// <summary>
-/// TEST SÜÝTÝ: IpSafeListMiddleware - IP Whitelist Firewall & Access Control
+/// TEST Sï¿½ï¿½Tï¿½: IpSafeListMiddleware - IP Whitelist Firewall & Access Control
 /// 
-/// GÜVENLÝK KAPSAMI:
+/// Gï¿½VENLï¿½K KAPSAMI:
 /// - IP whitelist enforcement
 /// - Unauthorized IP blocking (403 Forbidden)
 /// - Configuration parsing and validation
@@ -38,7 +38,7 @@ public class IpSafeListMiddlewareTests
     {
         _loggerMock = new Mock<ILogger<IpSafeListMiddleware>>();
 
-        // Next delegate: Normal pipeline devamý
+        // Next delegate: Normal pipeline devamï¿½
         _nextDelegate = (HttpContext context) =>
         {
             context.Response.StatusCode = 200;
@@ -47,7 +47,7 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // WHITELIST LOGIC TESTLERÝ - BAÞARILI SENARYOLAR
+    // WHITELIST LOGIC TESTLERï¿½ - BAï¿½ARILI SENARYOLAR
     // ============================================================================
 
     [Fact]
@@ -63,7 +63,7 @@ public class IpSafeListMiddlewareTests
         // Act
         await middleware.InvokeAsync(context);
 
-        // Assert: 200 OK (next middleware'e geçti)
+        // Assert: 200 OK (next middleware'e geï¿½ti)
         context.Response.StatusCode.Should().Be(200);
     }
 
@@ -75,7 +75,7 @@ public class IpSafeListMiddlewareTests
         var configuration = CreateConfiguration(allowedIps);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
 
-        // Act & Assert: Her biri geçmeli
+        // Act & Assert: Her biri geï¿½meli
         foreach (var ip in allowedIps)
         {
             var context = CreateHttpContext(ip);
@@ -87,7 +87,7 @@ public class IpSafeListMiddlewareTests
     [Fact]
     public async Task InvokeAsync_CaseInsensitiveMatch_ShouldAllow()
     {
-        // Arrange: IP adresleri case-insensitive (IPv6 için önemli)
+        // Arrange: IP adresleri case-insensitive (IPv6 iï¿½in ï¿½nemli)
         var allowedIps = new[] { "2001:0DB8:85A3:0000:0000:8A2E:0370:7334" }; // Uppercase
         var configuration = CreateConfiguration(allowedIps);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
@@ -97,12 +97,12 @@ public class IpSafeListMiddlewareTests
         // Act
         await middleware.InvokeAsync(context);
 
-        // Assert: IPv6 case-insensitive eþleþme
+        // Assert: IPv6 case-insensitive eï¿½leï¿½me
         context.Response.StatusCode.Should().Be(200);
     }
 
     // ============================================================================
-    // BLACKLIST BLOCKING TESTLERÝ - ENGELLENEN SENARYOLAR
+    // BLACKLIST BLOCKING TESTLERï¿½ - ENGELLENEN SENARYOLAR
     // ============================================================================
 
     [Fact]
@@ -166,7 +166,7 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // LOCALHOST EXCEPTION TESTLERÝ
+    // LOCALHOST EXCEPTION TESTLERï¿½
     // ============================================================================
 
     [Fact]
@@ -182,7 +182,7 @@ public class IpSafeListMiddlewareTests
         // Act
         await middleware.InvokeAsync(context);
 
-        // Assert: Localhost exception nedeniyle geçmeli
+        // Assert: Localhost exception nedeniyle geï¿½meli
         context.Response.StatusCode.Should().Be(200);
     }
 
@@ -206,7 +206,7 @@ public class IpSafeListMiddlewareTests
     [Fact]
     public async Task InvokeAsync_LocalhostDisabled_ShouldBlockLocalhost()
     {
-        // Arrange: Localhost exception kapalý
+        // Arrange: Localhost exception kapalï¿½
         var allowedIps = new[] { "192.168.1.5" };
         var configuration = CreateConfiguration(allowedIps, allowLocalhost: false);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
@@ -221,13 +221,13 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // CONFIGURATION PARSING TESTLERÝ
+    // CONFIGURATION PARSING TESTLERï¿½
     // ============================================================================
 
     [Fact]
     public async Task InvokeAsync_EmptyWhiteList_ShouldBlockAllRequests()
     {
-        // Arrange: Boþ whitelist (Fail-Safe: Herkesi engelle)
+        // Arrange: Boï¿½ whitelist (Fail-Safe: Herkesi engelle)
         var allowedIps = new string[] { };
         var configuration = CreateConfiguration(allowedIps, allowLocalhost: false);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
@@ -242,55 +242,45 @@ public class IpSafeListMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_NullConfiguration_ShouldBlockAllRequests()
+    public void InvokeAsync_NullConfiguration_ShouldBlockAllRequests()
     {
-        // Arrange: Configuration null (Fail-Safe)
-        IConfiguration nullConfiguration = null;
-        var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, nullConfiguration);
+        // Arrange & Assert: Configuration null ise constructor exception fÄ±rlatmalÄ±
+        IConfiguration nullConfiguration = null!;
 
-        var context = CreateHttpContext("192.168.1.5");
-
-        // Act
-        await middleware.InvokeAsync(context);
-
-        // Assert: Fail-Safe mode (herkesi engelle)
-        context.Response.StatusCode.Should().Be(403);
+        var action = () => new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, nullConfiguration);
+        action.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public async Task InvokeAsync_MissingConfigurationSection_ShouldBlockAll()
+    public void InvokeAsync_MissingConfigurationSection_ShouldBlockAll()
     {
-        // Arrange: "AllowedIPs" section yok
+        // Arrange: "IpSafelist" section yok
         var configData = new Dictionary<string, string>
         {
-            // AllowedIPs section yok
+            // IpSafelist section yok
         };
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configData)
             .Build();
 
-        var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
-        var context = CreateHttpContext("192.168.1.5");
-
-        // Act
-        await middleware.InvokeAsync(context);
-
-        // Assert: Fail-Safe
-        context.Response.StatusCode.Should().Be(403);
+        // Assert: Constructor exception fÄ±rlatmalÄ± (Fail-Safe: config eksikse baÅŸlatma)
+        var action = () => new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("*IpSafelist*is missing*");
     }
 
     [Fact]
     public void Constructor_InvalidIpAddressInConfig_ShouldLogWarning()
     {
-        // Arrange: Geçersiz IP adresi
+        // Arrange: Geï¿½ersiz IP adresi
         var allowedIps = new[] { "192.168.1.5", "invalid_ip", "10.0.0.1" };
         var configuration = CreateConfiguration(allowedIps);
 
         // Act
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
 
-        // Assert: Warning log yazýlmalý (geçersiz IP için)
+        // Assert: Warning log yazï¿½lmalï¿½ (geï¿½ersiz IP iï¿½in)
         _loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,
@@ -302,7 +292,7 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // IPv4 SUPPORT TESTLERÝ
+    // IPv4 SUPPORT TESTLERï¿½
     // ============================================================================
 
     [Fact]
@@ -342,7 +332,7 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // IPv6 SUPPORT TESTLERÝ
+    // IPv6 SUPPORT TESTLERï¿½
     // ============================================================================
 
     [Fact]
@@ -380,24 +370,23 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // CIDR NOTATION TESTLERÝ (OPSIYONEL - GELIÞMIÞ)
+    // CIDR NOTATION TESTLERï¿½ (OPSIYONEL - GELIï¿½MIï¿½)
     // ============================================================================
 
     [Fact]
-    public async Task InvokeAsync_CidrNotation_ShouldAllowSubnet()
+    public async Task InvokeAsync_CidrNotation_ShouldBeSkippedAsUnsupported()
     {
-        // Arrange: CIDR notation (192.168.1.0/24)
-        var allowedIps = new[] { "192.168.1.0/24" }; // Tüm 192.168.1.x subnet
+        // Arrange: CIDR notation (192.168.1.0/24) - henÃ¼z desteklenmiyor
+        var allowedIps = new[] { "192.168.1.0/24" };
         var configuration = CreateConfiguration(allowedIps);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
 
-        // Act: Subnet içindeki IP
+        // Act: CIDR skip edildiÄŸi iÃ§in whitelist boÅŸ kalÄ±r, her IP reddedilir
         var context = CreateHttpContext("192.168.1.100");
         await middleware.InvokeAsync(context);
 
-        // Assert: Geçmeli (eðer CIDR support varsa)
-        // Not: Bu test middleware'in CIDR desteðine baðlý
-        context.Response.StatusCode.Should().Be(200);
+        // Assert: CIDR henÃ¼z desteklenmediÄŸi iÃ§in IP reddedilir (403)
+        context.Response.StatusCode.Should().Be(403);
     }
 
     [Fact]
@@ -408,8 +397,8 @@ public class IpSafeListMiddlewareTests
         var configuration = CreateConfiguration(allowedIps);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
 
-        // Act: Subnet dýþýndaki IP
-        var context = CreateHttpContext("192.168.2.100"); // Farklý subnet
+        // Act: Subnet dï¿½ï¿½ï¿½ndaki IP
+        var context = CreateHttpContext("192.168.2.100"); // Farklï¿½ subnet
 
         await middleware.InvokeAsync(context);
 
@@ -418,7 +407,7 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // EDGE CASE TESTLERÝ
+    // EDGE CASE TESTLERï¿½
     // ============================================================================
 
     [Fact]
@@ -443,12 +432,12 @@ public class IpSafeListMiddlewareTests
     [Fact]
     public async Task InvokeAsync_EmptyIpAddress_ShouldBlock()
     {
-        // Arrange: Boþ IP string (parse edilemez)
+        // Arrange: Boï¿½ IP string (parse edilemez)
         var allowedIps = new[] { "192.168.1.5" };
         var configuration = CreateConfiguration(allowedIps);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
 
-        // IPAddress.Parse("") exception fýrlatýr, bu yüzden try-catch gerekli
+        // IPAddress.Parse("") exception fï¿½rlatï¿½r, bu yï¿½zden try-catch gerekli
         var context = new DefaultHttpContext();
         context.Response.Body = new System.IO.MemoryStream();
 
@@ -463,8 +452,8 @@ public class IpSafeListMiddlewareTests
         // Arrange: Config'te whitespace
         var configData = new Dictionary<string, string>
         {
-            { "AllowedIPs:0", "  192.168.1.5  " }, // Whitespace
-            { "AllowedIPs:1", "10.0.0.1" }
+            { "IpSafelist:AllowedIPs:0", "  192.168.1.5  " }, // Whitespace
+            { "IpSafelist:AllowedIPs:1", "10.0.0.1" }
         };
 
         var configuration = new ConfigurationBuilder()
@@ -478,12 +467,12 @@ public class IpSafeListMiddlewareTests
         // Act
         await middleware.InvokeAsync(context);
 
-        // Assert: Whitespace trim edilip eþleþmeli
+        // Assert: Whitespace trim edilip eï¿½leï¿½meli
         context.Response.StatusCode.Should().Be(200);
     }
 
     // ============================================================================
-    // LOGGING TESTLERÝ
+    // LOGGING TESTLERï¿½
     // ============================================================================
 
     [Fact]
@@ -500,12 +489,12 @@ public class IpSafeListMiddlewareTests
         // Act
         await middleware.InvokeAsync(context);
 
-        // Assert: Warning log yazýldý
+        // Assert: Warning log yazï¿½ldï¿½
         _loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("blocked") || v.ToString().Contains("forbidden")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Access denied") || v.ToString().Contains("denied")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -524,7 +513,7 @@ public class IpSafeListMiddlewareTests
         // Act
         await middleware.InvokeAsync(context);
 
-        // Assert: Information log (opsiyonel, middleware'e baðlý)
+        // Assert: Information log (opsiyonel, middleware'e baï¿½lï¿½)
         _loggerMock.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -536,18 +525,18 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // SECURITY AUDIT TESTLERÝ
+    // SECURITY AUDIT TESTLERï¿½
     // ============================================================================
 
     [Fact]
     public async Task InvokeAsync_SuspiciousIp_ShouldLogSecurityEvent()
     {
-        // Arrange: Bilinen kötü IP (örnek: Tor exit node)
+        // Arrange: Bilinen kï¿½tï¿½ IP (ï¿½rnek: Tor exit node)
         var allowedIps = new[] { "192.168.1.5" };
         var configuration = CreateConfiguration(allowedIps);
         var middleware = new IpSafeListMiddleware(_nextDelegate, _loggerMock.Object, configuration);
 
-        var suspiciousIp = "1.2.3.4"; // Simülasyon
+        var suspiciousIp = "1.2.3.4"; // Simï¿½lasyon
         var context = CreateHttpContext(suspiciousIp);
         context.Response.Body = new System.IO.MemoryStream();
 
@@ -566,13 +555,13 @@ public class IpSafeListMiddlewareTests
     }
 
     // ============================================================================
-    // PERFORMANCE TESTLERÝ
+    // PERFORMANCE TESTLERï¿½
     // ============================================================================
 
     [Fact]
     public async Task InvokeAsync_LargeWhiteList_ShouldPerformWell()
     {
-        // Arrange: Çok sayýda IP (1000 adet)
+        // Arrange: ï¿½ok sayï¿½da IP (1000 adet)
         var allowedIps = new List<string>();
         for (int i = 0; i < 1000; i++)
         {
@@ -591,7 +580,7 @@ public class IpSafeListMiddlewareTests
 
         // Assert: Performans kabul edilebilir (<100ms)
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(100,
-            because: "IP lookup hýzlý olmalý (HashSet kullanýmý önerilir)");
+            because: "IP lookup hï¿½zlï¿½ olmalï¿½ (HashSet kullanï¿½mï¿½ ï¿½nerilir)");
     }
 
     // ============================================================================
@@ -600,16 +589,14 @@ public class IpSafeListMiddlewareTests
 
     private static IConfiguration CreateConfiguration(string[] allowedIps, bool allowLocalhost = false)
     {
-        var configData = new Dictionary<string, string>();
+        var configData = new Dictionary<string, string>
+        {
+            ["IpSafelist:AllowLocalhost"] = allowLocalhost ? "true" : "false"
+        };
 
         for (int i = 0; i < allowedIps.Length; i++)
         {
-            configData[$"AllowedIPs:{i}"] = allowedIps[i];
-        }
-
-        if (allowLocalhost)
-        {
-            configData["AllowLocalhost"] = "true";
+            configData[$"IpSafelist:AllowedIPs:{i}"] = allowedIps[i];
         }
 
         return new ConfigurationBuilder()

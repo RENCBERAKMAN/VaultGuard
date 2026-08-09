@@ -59,7 +59,7 @@ public class SecretRepositoryTests : RepositoryTestBase
 
         var secret = Secret.Create(
             title: "Test Secret",
-            encryptedValue: "AQIDBA==",
+            encryptedValue: "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB",
             iv: iv,
             userId: userId);
 
@@ -86,10 +86,10 @@ public class SecretRepositoryTests : RepositoryTestBase
         var userA = Guid.NewGuid();
         var userB = Guid.NewGuid();
 
-        var secretA1 = Secret.Create("Secret A1", "AQ==", GenerateIV(), userA);
-        var secretA2 = Secret.Create("Secret A2", "Ag==", GenerateIV(), userA);
-        var secretB1 = Secret.Create("Secret B1", "Aw==", GenerateIV(), userB);
-        var secretB2 = Secret.Create("Secret B2", "BA==", GenerateIV(), userB);
+        var secretA1 = Secret.Create("Secret A1", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userA);
+        var secretA2 = Secret.Create("Secret A2", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userA);
+        var secretB1 = Secret.Create("Secret B1", "Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0ND", GenerateIV(), userB);
+        var secretB2 = Secret.Create("Secret B2", "RERERERERERERERERERERERERERERERERERERERERERE", GenerateIV(), userB);
 
         await _repository.AddAsync(secretA1);
         await _repository.AddAsync(secretA2);
@@ -115,7 +115,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         var userA = Guid.NewGuid();
         var userB = Guid.NewGuid();
 
-        var secretA1 = Secret.Create("Secret A1", "AQ==", GenerateIV(), userA);
+        var secretA1 = Secret.Create("Secret A1", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userA);
 
         await _repository.AddAsync(secretA1);
         await Context.SaveChangesAsync();
@@ -136,12 +136,12 @@ public class SecretRepositoryTests : RepositoryTestBase
         var user2 = Guid.NewGuid();
         var user3 = Guid.NewGuid();
 
-        await _repository.AddAsync(Secret.Create("U1-S1", "AQ==", GenerateIV(), user1));
-        await _repository.AddAsync(Secret.Create("U1-S2", "Ag==", GenerateIV(), user1));
-        await _repository.AddAsync(Secret.Create("U2-S1", "Aw==", GenerateIV(), user2));
-        await _repository.AddAsync(Secret.Create("U2-S2", "BA==", GenerateIV(), user2));
-        await _repository.AddAsync(Secret.Create("U3-S1", "BQ==", GenerateIV(), user3));
-        await _repository.AddAsync(Secret.Create("U3-S2", "Bg==", GenerateIV(), user3));
+        await _repository.AddAsync(Secret.Create("U1-S1", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), user1));
+        await _repository.AddAsync(Secret.Create("U1-S2", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), user1));
+        await _repository.AddAsync(Secret.Create("U2-S1", "Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0ND", GenerateIV(), user2));
+        await _repository.AddAsync(Secret.Create("U2-S2", "RERERERERERERERERERERERERERERERERERERERERERE", GenerateIV(), user2));
+        await _repository.AddAsync(Secret.Create("U3-S1", "RUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVF", GenerateIV(), user3));
+        await _repository.AddAsync(Secret.Create("U3-S2", "RkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZG", GenerateIV(), user3));
         await Context.SaveChangesAsync();
 
         // Act
@@ -174,8 +174,8 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var activeSecret = Secret.Create("Active Secret", "AQ==", GenerateIV(), userId);
-        var deletedSecret = Secret.Create("Deleted Secret", "Ag==", GenerateIV(), userId);
+        var activeSecret = Secret.Create("Active Secret", "RkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZG", GenerateIV(), userId);
+        var deletedSecret = Secret.Create("Deleted Secret", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userId);
         deletedSecret.MarkAsDeleted();
 
         await _repository.AddAsync(activeSecret);
@@ -198,7 +198,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret = Secret.Create("Deleted Secret", "AQ==", GenerateIV(), userId);
+        var secret = Secret.Create("Deleted Secret", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userId);
         secret.MarkAsDeleted();
 
         await _repository.AddAsync(secret);
@@ -217,7 +217,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret = Secret.Create("To Delete", "AQ==", GenerateIV(), userId);
+        var secret = Secret.Create("To Delete", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userId);
 
         await _repository.AddAsync(secret);
         await Context.SaveChangesAsync();
@@ -247,7 +247,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret = Secret.Create("Unique Title", "AQ==", GenerateIV(), userId);
+        var secret = Secret.Create("Unique Title", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userId);
 
         await _repository.AddAsync(secret);
         await Context.SaveChangesAsync();
@@ -268,8 +268,8 @@ public class SecretRepositoryTests : RepositoryTestBase
         var userA = Guid.NewGuid();
         var userB = Guid.NewGuid();
 
-        var secretA = Secret.Create("AWS Key", "AQ==", GenerateIV(), userA);
-        var secretB = Secret.Create("AWS Key", "Ag==", GenerateIV(), userB);
+        var secretA = Secret.Create("AWS Key", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", GenerateIV(), userA);
+        var secretB = Secret.Create("AWS Key", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userB);
 
         await _repository.AddAsync(secretA);
         await _repository.AddAsync(secretB);
@@ -297,7 +297,7 @@ public class SecretRepositoryTests : RepositoryTestBase
 
         for (int i = 1; i <= 3; i++)
         {
-            var secret = Secret.Create($"Secret {i}", "AQ==", GenerateIV(), userId);
+            var secret = Secret.Create($"Secret {i}", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userId);
             await _repository.AddAsync(secret);
         }
         await Context.SaveChangesAsync();
@@ -315,9 +315,9 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var active1 = Secret.Create("Active 1", "AQ==", GenerateIV(), userId);
-        var active2 = Secret.Create("Active 2", "Ag==", GenerateIV(), userId);
-        var deleted = Secret.Create("Deleted", "Aw==", GenerateIV(), userId);
+        var active1 = Secret.Create("Active 1", "RUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVF", GenerateIV(), userId);
+        var active2 = Secret.Create("Active 2", "RkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZG", GenerateIV(), userId);
+        var deleted = Secret.Create("Deleted", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userId);
         deleted.MarkAsDeleted();
 
         await _repository.AddAsync(active1);
@@ -342,7 +342,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret = Secret.Create("Test Secret", "AQ==", GenerateIV(), userId);
+        var secret = Secret.Create("Test Secret", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userId);
 
         await _repository.AddAsync(secret);
         await Context.SaveChangesAsync();
@@ -366,7 +366,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret = Secret.Create("Old Name", "AQ==", GenerateIV(), userId);
+        var secret = Secret.Create("Old Name", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userId);
 
         await _repository.AddAsync(secret);
         await Context.SaveChangesAsync();
@@ -389,7 +389,7 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret = Secret.Create("Test Secret", "AQ==", GenerateIV(), userId);
+        var secret = Secret.Create("Test Secret", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userId);
 
         await _repository.AddAsync(secret);
         await Context.SaveChangesAsync();
@@ -417,14 +417,14 @@ public class SecretRepositoryTests : RepositoryTestBase
         // Arrange
         var userId = Guid.NewGuid();
 
-        var secret1 = Secret.Create("Secret 1", "AQ==", GenerateIV(), userId);
+        var secret1 = Secret.Create("Secret 1", "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC", GenerateIV(), userId);
 
         await _repository.AddAsync(secret1);
         await Context.SaveChangesAsync();
 
         await Task.Delay(100);
 
-        var secret2 = Secret.Create("Secret 2", "Ag==", GenerateIV(), userId);
+        var secret2 = Secret.Create("Secret 2", "RUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVF", GenerateIV(), userId);
 
         await _repository.AddAsync(secret2);
         await Context.SaveChangesAsync();

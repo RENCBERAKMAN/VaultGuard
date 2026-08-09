@@ -30,4 +30,8 @@
 		<ProjectReference Include="..\VaultGuard.Infrastructure\VaultGuard.Infrastructure.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="VaultGuard.WebAPI.Tests" />
+	</ItemGroup>
+
 </Project>

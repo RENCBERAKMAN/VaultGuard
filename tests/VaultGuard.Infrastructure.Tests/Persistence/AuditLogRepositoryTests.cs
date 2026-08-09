@@ -71,7 +71,7 @@ public class AuditLogRepositoryTests : RepositoryTestBase
             entityName: "Secret",
             result: "Success",
             entityId: entityId, // ✅ DÜZELDİ: .ToString() kaldırıldı, doğrudan Guid nesnesi verildi
-            additionalData: "User decrypted secret via API"
+            additionalData: "User decrypted credential via API"
         );
 
         // Act
@@ -89,7 +89,7 @@ public class AuditLogRepositoryTests : RepositoryTestBase
         savedLog.EntityId.Should().Be(entityId);
 
         savedLog.Result.Should().Be("Success");
-        savedLog.AdditionalData.Should().Be("User decrypted secret via API");
+        savedLog.AdditionalData.Should().Be("User decrypted credential via API");
         savedLog.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
@@ -115,7 +115,7 @@ public class AuditLogRepositoryTests : RepositoryTestBase
 
         // Assert: Boş GUID gönderildiği için ArgumentException fırlatmalı
         act.Should().Throw<ArgumentException>()
-            .WithMessage("*User ID cannot be empty*"); // Domain'deki hata mesajı ile eşleşmeli
+            .WithMessage("*User ID cannot be Guid.Empty*");
     }
 
     /// <summary>

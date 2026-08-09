@@ -80,9 +80,9 @@ public sealed class UpdateSecretDtoValidator : AbstractValidator<UpdateSecretDto
             .MaximumLength(10000)
             .WithMessage("New secret value cannot exceed 10,000 characters (10KB limit). " +
                         "This limit prevents storage exhaustion and memory-based DoS attacks")
-            .Must(rawValue => rawValue!.Trim().Length > 0)
+            .Must(rawValue => string.IsNullOrEmpty(rawValue) || rawValue.Trim().Length > 0)
             .WithMessage("New secret value cannot consist only of whitespace")
-            .When(x => !string.IsNullOrWhiteSpace(x.NewRawValue)); // Only validate if NewRawValue is provided
+            .When(x => x.NewRawValue != null); // Only validate if NewRawValue is provided (null check, not whitespace check)
 
         // ====================================================================
         // CATEGORY VALIDATION (Optional - only if provided)
@@ -90,7 +90,7 @@ public sealed class UpdateSecretDtoValidator : AbstractValidator<UpdateSecretDto
         RuleFor(x => x.Category)
             .MaximumLength(50)
             .WithMessage("Secret category cannot exceed 50 characters (security: DoS prevention)")
-            .Must(cat => IsValidCategory(cat!))
+            .Must(cat => string.IsNullOrEmpty(cat) || IsValidCategory(cat!))
             .WithMessage("Secret category contains invalid characters. Only letters, numbers, spaces, and hyphens allowed")
             .When(x => x.Category != null); // Only validate if Category is explicitly set
 
