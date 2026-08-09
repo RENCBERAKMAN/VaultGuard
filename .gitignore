@@ -1,9 +1,12 @@
 ##############################################################################
 # 1. VAULTGUARD ÖZEL GÜVENLİK VE SIRLAR (EN KRİTİK KISIM)
 ##############################################################################
-# Yerel geliştirme sırlarını asla ama asla commit etme
+# appsettings.json'ın kendisi gerçek key/connection string içerebilir - ASLA commit etme
+appsettings.json
 appsettings.Development.json
 appsettings.Local.json
+appsettings.Production.json
+appsettings.Staging.json
 *.secrets.json
 .env
 .env.*
@@ -16,10 +19,12 @@ secrets.json
 *.key
 *.pem
 
+# .NET User Secrets (dotnet user-secrets kullanılıyorsa)
+**/secrets.json
+
 ##############################################################################
 # 2. .NET / VISUAL STUDIO STANDARTLARI
 ##############################################################################
-# Build sonuçları
 [Bb]in/
 [Oo]bj/
 [Ww][Ii][Nn]32/
@@ -28,7 +33,6 @@ secrets.json
 x64/
 x86/
 
-# Visual Studio dosyaları
 .vs/
 *.user
 *.userosscache
@@ -36,7 +40,6 @@ x86/
 *.sln.docstates
 *.userprefs
 
-# Geçici dosyalar ve loglar
 *.log
 [Ll]og/
 [Ll]ogs/
@@ -46,14 +49,12 @@ x86/
 ##############################################################################
 # 3. VERİTABANI VE CACHE (VAULTGUARD ALTYAPISI)
 ##############################################################################
-# PostgreSQL ve SQL Server yerel dosyaları
 *.mdf
 *.ldf
 *.ndf
 *.db
 *.sqlite
 
-# Redis / Docker yerel kalıntıları
 .docker/
 docker-compose.override.yml
 
@@ -74,3 +75,19 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 desktop.ini
+
+##############################################################################
+# 6. TEST SONUÇLARI VE COVERAGE
+##############################################################################
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+##############################################################################
+# 7. NUGET
+##############################################################################
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
