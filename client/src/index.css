@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #f5f7fc;
+  --color-panel: #ffffff;
+  --color-panel-raised: #ffffff;
+  --color-line: rgba(15, 23, 42, 0.08);
+  --color-accent: #5b8def;
+  --color-accent-2: #8b7fe8;
+  --color-success: #1fa971;
+  --color-danger: #e0524a;
+  --color-text: #172033;
+  --color-text-muted: #5b6b85;
+  --color-text-faint: #9aa6bc;
+
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--color-void);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 15% 10%, rgba(91, 141, 239, 0.10), transparent),
+    radial-gradient(ellipse 55% 45% at 85% 85%, rgba(139, 127, 232, 0.10), transparent),
+    radial-gradient(circle at 1px 1px, rgba(23, 32, 51, 0.045) 1px, transparent 0);
+  background-size: auto, auto, 28px 28px;
+  background-attachment: fixed;
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.glass {
+  background-color: color-mix(in srgb, var(--color-panel) 82%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 24px -8px rgba(23, 32, 51, 0.10);
+}

@@ -91,3 +91,11 @@ coverage/
 *.nupkg
 **/[Pp]ackages/*
 !**/[Pp]ackages/build/
+
+##############################################################################
+# 8. FRONTEND (client - React/Vite)
+##############################################################################
+client/node_modules/
+client/dist/
+client/.vite/
+client/*.local
