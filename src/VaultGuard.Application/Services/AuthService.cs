@@ -35,16 +35,19 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITokenService _tokenService;
 
     /// <summary>
     /// Constructor - Dependency Injection
     /// </summary>
     public AuthService(
         IUserRepository userRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ITokenService tokenService)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
+        _tokenService = tokenService;
     }
 
     // ============================================================================
@@ -200,8 +203,8 @@ public class AuthService : IAuthService
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync(cancellationToken);
 
-            // Şimdilik geçici bir Token oluşturuyoruz
-            var tokenDto = new TokenDto { AccessToken = "Gecici_Anahtar", Expiration = DateTime.UtcNow.AddHours(1) };
+            var accessToken = _tokenService.CreateToken(user);
+            var tokenDto = new TokenDto { AccessToken = accessToken, Expiration = DateTime.UtcNow.AddHours(1) };
 
             return new SuccessDataResult<TokenDto>(tokenDto, "Giriş başarılı.");
         }
@@ -212,8 +215,10 @@ public class AuthService : IAuthService
             throw; // "throw;" yazmazsan hata dışarı çıkmaz, test fail olur!
 
         }
-        catch (Exception)
+                catch (Exception ex)
         {
+            Console.WriteLine("!!! LOGIN EXCEPTION: " + ex.GetType().FullName + " - " + ex.Message);
+            Console.WriteLine("!!! STACK TRACE: " + ex.StackTrace);
             return new ErrorDataResult<TokenDto>("Giriş sırasında bir hata oluştu.");
         }
     }

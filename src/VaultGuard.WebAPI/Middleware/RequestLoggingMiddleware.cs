@@ -55,35 +55,26 @@ public class RequestLoggingMiddleware
             context.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
             string.IsNullOrEmpty(maskedBody) ? "[None]" : maskedBody);
 
-        var originalBodyStream = context.Response.Body;
-
-        using (var responseBody = new MemoryStream())
+                try
         {
-            context.Response.Body = responseBody;
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            // Hata durumunda siber güvenlik logu oluştur
+            _logger.LogCritical(ex, "VaultGuard SECURITY ALERT | ID: {CorrelationId} | İstek sırasında kritik hata!", correlationId);
+            throw; // ExceptionHandlingMiddleware bunu yakalayacaktır
+        }
+        finally
+        {
+            stopwatch.Stop();
 
-            try
-            {
-                await _next(context);
-            }
-            catch (Exception ex)
-            {
-                // Hata durumunda siber güvenlik logu oluştur
-                _logger.LogCritical(ex, "VaultGuard SECURITY ALERT | ID: {CorrelationId} | İstek sırasında kritik hata!", correlationId);
-                throw; // ExceptionHandlingMiddleware bunu yakalayacaktır
-            }
-            finally
-            {
-                stopwatch.Stop();
-
-                // --- YAPISAL RESPONSE LOGLAMA ---
-                _logger.LogInformation(
-                    "VaultGuard Audit [Response] | ID: {CorrelationId} | Status: {StatusCode} | Duration: {ElapsedMs}ms",
-                    correlationId,
-                    context.Response.StatusCode,
-                    stopwatch.ElapsedMilliseconds);
-
-                await responseBody.CopyToAsync(originalBodyStream);
-            }
+            // --- YAPISAL RESPONSE LOGLAMA ---
+            _logger.LogInformation(
+                "VaultGuard Audit [Response] | ID: {CorrelationId} | Status: {StatusCode} | Duration: {ElapsedMs}ms",
+                correlationId,
+                context.Response.StatusCode,
+                stopwatch.ElapsedMilliseconds);
         }
     }
 

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using VaultGuard.Application.DTOs.Secrets;
 using VaultGuard.Application.Interfaces;
 using VaultGuard.Domain.Common.Results;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 // ✅ DÜZELTME: Models namespace KALDIRILDI (yok)
 
 namespace VaultGuard.WebAPI.Controllers;
@@ -49,7 +50,7 @@ namespace VaultGuard.WebAPI.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Produces("application/json")]
 public class SecretsController : ControllerBase
 {

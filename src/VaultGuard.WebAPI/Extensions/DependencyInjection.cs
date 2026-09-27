@@ -1,10 +1,13 @@
 using VaultGuard.Application.Interfaces;
 using VaultGuard.Application.Services;
-using VaultGuard.Infrastructure.Persistence; // DOÐRU ADRES: Repositories yerine Persistence
+using VaultGuard.Infrastructure.Persistence;
 using VaultGuard.Infrastructure.Security;
+using VaultGuard.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using VaultGuard.WebAPI; // DatabaseHealthCheck'in bulunduðu yer
+using VaultGuard.WebAPI;
+using VaultGuard.Application.Validators;
+using FluentValidation;
 
 namespace VaultGuard.WebAPI.Extensions;
 
@@ -15,7 +18,11 @@ public static class DependencyInjection
         // Business Logic Servisleri
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ISecretService, SecretService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
 
+        // FluentValidation'Ä± Application katmanÄ±ndaki assembly Ã¼zerinden kaydediyoruz:
+        services.AddValidatorsFromAssembly(typeof(VaultGuard.Application.DTOs.Secrets.CreateSecretDto).Assembly);
         return services;
     }
 
@@ -23,14 +30,15 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // ---------------------------------------------------------
-        // SÝBER GÜVENLÝK MOTORLARI (Encryption & Hashing)
-        // ---------------------------------------------------------
         services.AddSingleton<IEncryptionService, AesEncryptionService>();
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddJwtAuthentication(configuration);
 
         // ---------------------------------------------------------
-        // VERÝTABANI YAPILANDIRMASI (SQL Server)
+        // VERÄ°TABANI YAPILANDIRMASI (SQL Server)
         // ---------------------------------------------------------
         services.AddDbContext<VaultGuardDbContext>(options =>
         {
@@ -41,17 +49,17 @@ public static class DependencyInjection
 
             options.UseSqlServer(connectionString, sqlOptions =>
             {
-                // MigrationsAssembly ismine dikkat et: Proje adýnla birebir ayný olmalý
                 sqlOptions.MigrationsAssembly("VaultGuard.Infrastructure");
-                sqlOptions.CommandTimeout(30); // DoS korumasý
+                sqlOptions.CommandTimeout(30);
             });
 
-            // Performans ve Güvenlik: Veri okurken gereksiz tracking yapma
             options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         });
 
-        // Repository Kayýtlarý (Persistence klasöründen çekiliyor)
+        // Repository KayÄ±tlarÄ±
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ISecretRepository, SecretRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
         return services;
     }
@@ -63,10 +71,10 @@ public static class DependencyInjection
             options.AddPolicy("VaultGuardPolicy", builder =>
             {
                 builder
-                    .WithOrigins("http://localhost:3000", "http://localhost:5173") // Sadece güvenilir frontend adresleri
+                    .WithOrigins("http://localhost:3000", "http://localhost:5173")
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials(); // Güvenli çerezler (HTTP-Only) için zorunlu
+                    .AllowCredentials();
             });
         });
 
@@ -77,7 +85,6 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Altyapý ve Veritabaný saðlýk denetimi
         services.AddHealthChecks()
             .AddDbContextCheck<VaultGuardDbContext>("database")
             .AddCheck<DatabaseHealthCheck>("database_detailed");

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using VaultGuard.Application.Interfaces;
 using VaultGuard.Domain.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace VaultGuard.WebAPI.Controllers;
 
@@ -37,7 +38,7 @@ namespace VaultGuard.WebAPI.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Auditor")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin,Auditor")]
 [Produces("application/json")]
 public class AuditLogsController : ControllerBase
 {

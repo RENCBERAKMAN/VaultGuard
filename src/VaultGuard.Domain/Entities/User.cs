@@ -22,6 +22,7 @@ public sealed class User : BaseEntity
     public string PhoneNumber { get; private set; } = string.Empty;
     public string Role { get; private set; } = "User";
     public string SecurityStamp { get; private set; } = Guid.NewGuid().ToString();
+    public byte[]? RowVersion { get; private set; }
     public bool IsActive { get; private set; } = true;
     public DateTime? LastLoginAt { get; private set; }
     public string? RefreshToken { get; private set; }

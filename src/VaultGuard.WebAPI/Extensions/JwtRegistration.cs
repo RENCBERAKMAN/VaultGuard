@@ -21,10 +21,12 @@ public static class JwtRegistration
         var audience = jwtSettings["Audience"];
         var expiryMinutes = jwtSettings["ExpiryMinutes"];
 
-        // GÜVENLÝK DOÐRULAMASI: Eksik ayarla uygulama baþlamasýn (Fail-Fast)
+        // Gï¿½VENLï¿½K DOï¿½RULAMASI: Eksik ayarla uygulama baï¿½lamasï¿½n (Fail-Fast)
         ValidateJwtSettings(secretKey, issuer, audience, expiryMinutes);
 
         var key = Encoding.UTF8.GetBytes(secretKey!);
+
+               
 
         services.AddAuthentication(options =>
         {
@@ -35,7 +37,7 @@ public static class JwtRegistration
         .AddJwtBearer(options =>
         {
             options.SaveToken = true;
-            options.RequireHttpsMetadata = true; // Üretim ortamýnda HTTPS zorunlu
+            options.RequireHttpsMetadata = true; // ï¿½retim ortamï¿½nda HTTPS zorunlu
 
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -49,9 +51,9 @@ public static class JwtRegistration
                 ValidAudience = audience,
 
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero, // Tolerans süresini 0 yaparak güvenliði maksimize ediyoruz
+                ClockSkew = TimeSpan.Zero, // Tolerans sï¿½resini 0 yaparak gï¿½venliï¿½i maksimize ediyoruz
 
-                // SÝBER GÜVENLÝK: Claim eþleþmelerini garanti altýna alýyoruz
+                // Sï¿½BER Gï¿½VENLï¿½K: Claim eï¿½leï¿½melerini garanti altï¿½na alï¿½yoruz
                 NameClaimType = ClaimTypes.NameIdentifier,
                 RoleClaimType = ClaimTypes.Role,
 
@@ -72,7 +74,7 @@ public static class JwtRegistration
 
                 OnChallenge = context =>
                 {
-                    // 401 Unauthorized - IResult formatýnda standardize edildi
+                    // 401 Unauthorized - IResult formatï¿½nda standardize edildi
                     context.HandleResponse();
                     context.Response.StatusCode = 401;
                     context.Response.ContentType = "application/json";
@@ -80,7 +82,7 @@ public static class JwtRegistration
                     var result = System.Text.Json.JsonSerializer.Serialize(new
                     {
                         success = false,
-                        message = "Eriþim reddedildi. Geçerli bir kimlik doðrulamasý gerekiyor.",
+                        message = "Eriï¿½im reddedildi. Geï¿½erli bir kimlik doï¿½rulamasï¿½ gerekiyor.",
                         errorCode = "ERR_UNAUTHORIZED"
                     });
 
@@ -89,14 +91,14 @@ public static class JwtRegistration
 
                 OnForbidden = context =>
                 {
-                    // 403 Forbidden - Yetki hatasý standardize edildi
+                    // 403 Forbidden - Yetki hatasï¿½ standardize edildi
                     context.Response.StatusCode = 403;
                     context.Response.ContentType = "application/json";
 
                     var result = System.Text.Json.JsonSerializer.Serialize(new
                     {
                         success = false,
-                        message = "Bu iþlem için gerekli yetkiye sahip deðilsiniz.",
+                        message = "Bu iï¿½lem iï¿½in gerekli yetkiye sahip deï¿½ilsiniz.",
                         errorCode = "ERR_FORBIDDEN"
                     });
 
@@ -104,6 +106,7 @@ public static class JwtRegistration
                 }
             };
         });
+                
 
         return services;
     }
@@ -115,15 +118,15 @@ public static class JwtRegistration
         string? expiryMinutes)
     {
         if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
-            throw new InvalidOperationException("HATA: JWT SecretKey eksik veya çok kýsa (Min 32 karakter olmalý)!");
+            throw new InvalidOperationException("HATA: JWT SecretKey eksik veya ï¿½ok kï¿½sa (Min 32 karakter olmalï¿½)!");
 
         if (string.IsNullOrWhiteSpace(issuer))
-            throw new InvalidOperationException("HATA: JWT Issuer ayarý eksik!");
+            throw new InvalidOperationException("HATA: JWT Issuer ayarï¿½ eksik!");
 
         if (string.IsNullOrWhiteSpace(audience))
-            throw new InvalidOperationException("HATA: JWT Audience ayarý eksik!");
+            throw new InvalidOperationException("HATA: JWT Audience ayarï¿½ eksik!");
 
         if (!int.TryParse(expiryMinutes, out _))
-            throw new InvalidOperationException("HATA: JWT ExpiryMinutes geçersiz!");
+            throw new InvalidOperationException("HATA: JWT ExpiryMinutes geï¿½ersiz!");
     }
 }

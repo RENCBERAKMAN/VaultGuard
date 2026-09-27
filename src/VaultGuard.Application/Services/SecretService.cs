@@ -112,7 +112,7 @@ public sealed class SecretService : ISecretService
 
             // 7. PERSISTENCE
             await _secretRepository.AddAsync(secret, cancellationToken);
-
+                        await _secretRepository.SaveChangesAsync(cancellationToken);
             // 8. AUDIT LOG
             await _auditLogService.LogSecurityEventAsync(
                 eventType: "SECRET_CREATED",
@@ -263,7 +263,7 @@ public sealed class SecretService : ISecretService
             // 5. ACCESS TRACKING
             secret.RecordAccess();
             await _secretRepository.UpdateAsync(secret, cancellationToken);
-
+            await _secretRepository.SaveChangesAsync(cancellationToken);
             // 6. AUDIT LOG (Success)
             await _auditLogService.LogSecurityEventAsync(
                 eventType: "SECRET_DECRYPTED",
@@ -546,7 +546,7 @@ public sealed class SecretService : ISecretService
 
             // 7. PERSISTENCE
             await _secretRepository.UpdateAsync(secret, cancellationToken);
-
+            await _secretRepository.SaveChangesAsync(cancellationToken);
             // 8. AUDIT LOG
             await _auditLogService.LogSecurityEventAsync(
                 eventType: "SECRET_UPDATED",
@@ -639,7 +639,7 @@ public sealed class SecretService : ISecretService
 
             // 2. SOFT DELETE
             await _secretRepository.DeleteAsync(secret, cancellationToken);
-
+            await _secretRepository.SaveChangesAsync(cancellationToken);
             // 3. AUDIT LOG
             await _auditLogService.LogSecurityEventAsync(
                 eventType: "SECRET_DELETED",

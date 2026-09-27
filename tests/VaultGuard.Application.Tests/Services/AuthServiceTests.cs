@@ -21,7 +21,7 @@ public class AuthServiceTests : TestBase
 
     public AuthServiceTests()
     {
-        _authService = new AuthService(MockUserRepository.Object, MockPasswordHasher.Object);
+                _authService = new AuthService(MockUserRepository.Object, MockPasswordHasher.Object, MockTokenService.Object);
     }
 
     [Fact]

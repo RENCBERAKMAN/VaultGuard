@@ -16,6 +16,7 @@ builder.Services.AddApplicationServices();
 
 // Veritabanı, JWT, Hashleme ve Şifreleme (AES) servislerini yükler
 // SQL Connection String ayarı burada otomatik yapılır!
+
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // CORS Politikalarını yükler ("VaultGuardPolicy")

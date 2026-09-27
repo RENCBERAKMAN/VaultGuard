@@ -13,10 +13,10 @@ namespace VaultGuard.Infrastructure.Security;
 /// <summary>
 /// VaultGuard Enterprise-Grade Authentication Token Service.
 /// 
-/// SÝBER GÜVENLÝK PRENSÝPLERÝ:
-/// - Cryptographic Strength: HMAC-SHA512 kullanýlarak imza güvenliði saðlanýr.
-/// - Principle of Least Privilege: Sadece yetkilendirme için gerekli minimum claim'ler eklenir.
-/// - Configuration Security: Hassas anahtarlar doðrudan kodda deðil, IConfiguration üzerinden yönetilir.
+/// Sï¿½BER Gï¿½VENLï¿½K PRENSï¿½PLERï¿½:
+/// - Cryptographic Strength: HMAC-SHA512 kullanï¿½larak imza gï¿½venliï¿½i saï¿½lanï¿½r.
+/// - Principle of Least Privilege: Sadece yetkilendirme iï¿½in gerekli minimum claim'ler eklenir.
+/// - Configuration Security: Hassas anahtarlar doï¿½rudan kodda deï¿½il, IConfiguration ï¿½zerinden yï¿½netilir.
 /// </summary>
 public sealed class TokenService : ITokenService
 {
@@ -27,49 +27,49 @@ public sealed class TokenService : ITokenService
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-        // SÝBER GÜVENLÝK: Secret Key'in varlýðý ve uzunluðu kontrol edilir. 
-        // JWT HS512 için anahtar en az 64 karakter (512 bit) olmalýdýr.
-        var jwtSecret = _configuration["Jwt:Secret"];
+        // Sï¿½BER Gï¿½VENLï¿½K: Secret Key'in varlï¿½ï¿½ï¿½ ve uzunluï¿½u kontrol edilir. 
+        // JWT HS512 iï¿½in anahtar en az 64 karakter (512 bit) olmalï¿½dï¿½r.
+                var jwtSecret = _configuration["Jwt:SecretKey"] ?? _configuration["Jwt:Secret"];
         if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 64)
         {
             throw new InvalidOperationException(
-                "SÝBER GÜVENLÝK KRÝTÝK: JWT Secret anahtarý eksik veya çok kýsa! " +
-                "En az 64 karakterlik bir anahtar appsettings.json içerisinde tanýmlanmalýdýr.");
+                "Sï¿½BER Gï¿½VENLï¿½K KRï¿½Tï¿½K: JWT Secret anahtarï¿½ eksik veya ï¿½ok kï¿½sa! " +
+                "En az 64 karakterlik bir anahtar appsettings.json iï¿½erisinde tanï¿½mlanmalï¿½dï¿½r.");
         }
 
         _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
     }
 
     /// <summary>
-    /// Kullanýcý için 7 gün geçerli, yüksek güvenlikli bir JWT üretir.
+    /// Kullanï¿½cï¿½ iï¿½in 7 gï¿½n geï¿½erli, yï¿½ksek gï¿½venlikli bir JWT ï¿½retir.
     /// </summary>
-    /// <param name="user">Token üretilecek Domain User entity'si</param>
-    /// <returns>Mühürlenmiþ JWT string</returns>
+    /// <param name="user">Token ï¿½retilecek Domain User entity'si</param>
+    /// <returns>Mï¿½hï¿½rlenmiï¿½ JWT string</returns>
     public string CreateToken(User user)
     {
-        // 1. Claim Set (Kimlik Bilgileri): Hassas olmayan, yetki odaklý bilgiler.
+        // 1. Claim Set (Kimlik Bilgileri): Hassas olmayan, yetki odaklï¿½ bilgiler.
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.NameId, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim(ClaimTypes.Role, user.Role) // Rol tabanlý yetkilendirme (RBAC) için
+            new Claim(ClaimTypes.Role, user.Role) // Rol tabanlï¿½ yetkilendirme (RBAC) iï¿½in
         };
 
-        // 2. Ýmza Hazýrlýðý: HMAC-SHA512 algoritmasý ile en üst düzey imza güvenliði.
+        // 2. ï¿½mza Hazï¿½rlï¿½ï¿½ï¿½: HMAC-SHA512 algoritmasï¿½ ile en ï¿½st dï¿½zey imza gï¿½venliï¿½i.
         var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
 
-        // 3. Token Tanýmý: Süre, Alýcý ve Gönderici bilgileri.
+        // 3. Token Tanï¿½mï¿½: Sï¿½re, Alï¿½cï¿½ ve Gï¿½nderici bilgileri.
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddDays(7), // Token süresi: 7 gün (Config'e çekilebilir)
+            Expires = DateTime.UtcNow.AddDays(7), // Token sï¿½resi: 7 gï¿½n (Config'e ï¿½ekilebilir)
             SigningCredentials = creds,
             Issuer = _configuration["Jwt:Issuer"],
             Audience = _configuration["Jwt:Audience"]
         };
 
-        // 4. Üretim ve Mühürleme
+        // 4. ï¿½retim ve Mï¿½hï¿½rleme
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
 

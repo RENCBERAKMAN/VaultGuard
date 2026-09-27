@@ -232,4 +232,5 @@ public interface ISecretRepository
     Task<int> GetCountByUserIdAsync(
         Guid userId,
         CancellationToken cancellationToken = default);
+            Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

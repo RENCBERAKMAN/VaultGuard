@@ -7,54 +7,55 @@ namespace VaultGuard.Infrastructure.Security;
 /// <summary>
 /// VaultGuard Enterprise-Grade Password Security Service.
 /// 
-/// SÝBER GÜVENLÝK PRENSÝPLERÝ:
-/// - Salt (Tuzlama): Her þifre için otomatik ve benzersiz salt üretilir.
-/// - Adaptive Hashing: Donaným güçlendikçe 'Work Factor' artýrýlabilir.
-/// - Anti-Timing Attack: Karþýlaþtýrma iþlemi sabit süreli koruma saðlar.
+/// Sï¿½BER Gï¿½VENLï¿½K PRENSï¿½PLERï¿½:
+/// - Salt (Tuzlama): Her ï¿½ifre iï¿½in otomatik ve benzersiz salt ï¿½retilir.
+/// - Adaptive Hashing: Donanï¿½m gï¿½ï¿½lendikï¿½e 'Work Factor' artï¿½rï¿½labilir.
+/// - Anti-Timing Attack: Karï¿½ï¿½laï¿½tï¿½rma iï¿½lemi sabit sï¿½reli koruma saï¿½lar.
 /// </summary>
 public sealed class BCryptPasswordHasher : IPasswordHasher
 {
     /// <summary>
-    /// Work Factor (Cost): Algoritmanýn kaç kez döneceðini belirler.
-    /// 11 deðeri, günümüz donanýmlarý için siber güvenlik ve performans dengesidir (Sweet Spot).
+    /// Work Factor (Cost): Algoritmanï¿½n kaï¿½ kez dï¿½neceï¿½ini belirler.
+    /// 11 deï¿½eri, gï¿½nï¿½mï¿½z donanï¿½mlarï¿½ iï¿½in siber gï¿½venlik ve performans dengesidir (Sweet Spot).
     /// </summary>
     private const int WorkFactor = 11;
 
     /// <summary>
-    /// Þifreyi siber güvenlik standartlarýnda hash'ler.
+    /// ï¿½ifreyi siber gï¿½venlik standartlarï¿½nda hash'ler.
     /// </summary>
-    /// <param name="password">Plain-text þifre</param>
-    /// <returns>Hashlenmiþ ve tuzlanmýþ string</returns>
-    /// <exception cref="ArgumentNullException">Þifre boþ ise fýrlatýlýr</exception>
+    /// <param name="password">Plain-text ï¿½ifre</param>
+    /// <returns>Hashlenmiï¿½ ve tuzlanmï¿½ï¿½ string</returns>
+    /// <exception cref="ArgumentNullException">ï¿½ifre boï¿½ ise fï¿½rlatï¿½lï¿½r</exception>
     public string HashPassword(string password)
     {
         if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentNullException(nameof(password), "Þifre mühürlenmek için boþ býrakýlamaz.");
+            throw new ArgumentNullException(nameof(password), "ï¿½ifre mï¿½hï¿½rlenmek iï¿½in boï¿½ bï¿½rakï¿½lamaz.");
 
-        // SÝBER GÜVENLÝK: BCrypt algoritmasý her seferinde farklý bir salt üretir.
-        // EnhancedEntropy: True seçeneði ile modern sistemlerde daha güçlü bir entropy saðlanýr.
+        // Sï¿½BER Gï¿½VENLï¿½K: BCrypt algoritmasï¿½ her seferinde farklï¿½ bir salt ï¿½retir.
+        // EnhancedEntropy: True seï¿½eneï¿½i ile modern sistemlerde daha gï¿½ï¿½lï¿½ bir entropy saï¿½lanï¿½r.
         return BCrypt.Net.BCrypt.EnhancedHashPassword(password, WorkFactor);
     }
 
     /// <summary>
-    /// Girilen þifreyi veritabanýndaki hash ile doðrular.
+    /// Girilen ï¿½ifreyi veritabanï¿½ndaki hash ile doï¿½rular.
     /// </summary>
-    /// <param name="password">Kullanýcýnýn giriþ yaptýðý düz metin þifre</param>
-    /// <param name="hashedPassword">Veritabanýndaki mühürlü hash</param>
-    /// <returns>Doðrulama baþarýlý ise true</returns>
+    /// <param name="password">Kullanï¿½cï¿½nï¿½n giriï¿½ yaptï¿½ï¿½ï¿½ dï¿½z metin ï¿½ifre</param>
+    /// <param name="hashedPassword">Veritabanï¿½ndaki mï¿½hï¿½rlï¿½ hash</param>
+    /// <returns>Doï¿½rulama baï¿½arï¿½lï¿½ ise true</returns>
     public bool VerifyPassword(string password, string hashedPassword)
     {
         if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(hashedPassword))
             return false;
 
-        try
+                try
         {
-            // SÝBER GÜVENLÝK: Side-channel saldýrýlarýný önlemek için güvenli karþýlaþtýrma yapar.
+            // SÄ°BER GÃœVENLÄ°K: Side-channel saldÄ±rÄ±larÄ±nÄ± Ã¶nlemek iÃ§in gÃ¼venli karÅŸÄ±laÅŸtÄ±rma yapar.
             return BCrypt.Net.BCrypt.EnhancedVerify(password, hashedPassword);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // HATA YÖNETÝMÝ: Geçersiz hash formatý gelirse sýzýntý vermemek için false dönülür.
+            Console.WriteLine("!!! VERIFY PASSWORD EXCEPTION: " + ex.GetType().FullName + " - " + ex.Message);
+            Console.WriteLine("!!! STACK TRACE: " + ex.StackTrace);
             return false;
         }
     }

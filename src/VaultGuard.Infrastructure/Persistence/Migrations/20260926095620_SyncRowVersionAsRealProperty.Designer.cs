@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VaultGuard.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using VaultGuard.Infrastructure.Persistence;
 namespace VaultGuard.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(VaultGuardDbContext))]
-    partial class VaultGuardDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926095620_SyncRowVersionAsRealProperty")]
+    partial class SyncRowVersionAsRealProperty
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

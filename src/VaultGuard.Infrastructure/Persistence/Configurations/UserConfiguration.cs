@@ -172,9 +172,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         // Bir-Çok İlişki: User -> Secrets
         builder.HasMany<Secret>()
-     .WithOne()
-     .HasForeignKey(s => s.UserId) // DÜZELTİLDİ: UserId kullanıldı
-     .OnDelete(DeleteBehavior.Restrict);
+            .WithOne()
+            .HasForeignKey(s => s.UserId) // DÜZELTİLDİ: UserId kullanıldı
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Bir-Çok İlişki: User -> AuditLogs
         builder.HasMany<AuditLog>()
@@ -188,7 +188,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         // GÜVENLİK: Eşzamanlı senaryolarda kayıp güncellemeleri (lost update) önler
         // Optimistic concurrency control için .SetConcurrencyToken() kullanımı
-        builder.Property<byte[]>("RowVersion")
+        builder.Property(u => u.RowVersion)
             .IsRowVersion()
             .HasColumnName("RowVersion");
 

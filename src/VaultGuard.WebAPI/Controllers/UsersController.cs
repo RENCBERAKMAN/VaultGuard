@@ -10,10 +10,11 @@ using VaultGuard.Application.Interfaces;
 using VaultGuard.Domain.Common.Results;
 using VaultGuard.WebAPI.Common;
 using IResult = VaultGuard.Domain.Common.Results.IResult;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace VaultGuard.WebAPI.Controllers;
 
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController : BaseController

@@ -115,13 +115,19 @@ public sealed class SecretRepository : ISecretRepository
         }
 
         // ADD: Entity to context (not committed yet)
-        await _context.Secrets.AddAsync(secret, cancellationToken);
+                await _context.Secrets.AddAsync(secret, cancellationToken);
 
         // NOTE: SaveChanges NOT called here (Unit of Work pattern)
         // Service layer calls _context.SaveChangesAsync() after all operations
 
         return secret;
     }
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.SaveChangesAsync(cancellationToken);
+    }
+    
 
     /// <inheritdoc/>
     public async Task<Secret> UpdateAsync(

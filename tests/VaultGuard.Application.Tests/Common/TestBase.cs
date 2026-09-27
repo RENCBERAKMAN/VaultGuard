@@ -7,25 +7,27 @@ using Xunit;
 namespace VaultGuard.Application.Tests.Common;
 
 /// <summary>
-/// Tüm Application Service testleri için merkezi temel sýnýf.
+/// Tï¿½m Application Service testleri iï¿½in merkezi temel sï¿½nï¿½f.
 /// 
-/// AMAÇ:
-/// - Mock nesnelerini (Repository, PasswordHasher) tüm testlerde tekrar tekrar oluþturmaktan kaçýnmak
-/// - Test setup'ýný merkezileþtirerek bakým kolaylýðý saðlamak
+/// AMAï¿½:
+/// - Mock nesnelerini (Repository, PasswordHasher) tï¿½m testlerde tekrar tekrar oluï¿½turmaktan kaï¿½ï¿½nmak
+/// - Test setup'ï¿½nï¿½ merkezileï¿½tirerek bakï¿½m kolaylï¿½ï¿½ï¿½ saï¿½lamak
 /// - DRY (Don't Repeat Yourself) prensibine uymak
 /// 
-/// GÜVENLÝK:
-/// Her test izole çalýþmalýdýr. Bu nedenle her test öncesi yeni mock'lar oluþturulur.
+/// Gï¿½VENLï¿½K:
+/// Her test izole ï¿½alï¿½ï¿½malï¿½dï¿½r. Bu nedenle her test ï¿½ncesi yeni mock'lar oluï¿½turulur.
 /// </summary>
 public abstract class TestBase : IDisposable
 {
-    protected Mock<IUserRepository> MockUserRepository { get; private set; }
+        protected Mock<IUserRepository> MockUserRepository { get; private set; }
     protected Mock<IPasswordHasher> MockPasswordHasher { get; private set; }
+    protected Mock<ITokenService> MockTokenService { get; private set; }
 
     protected TestBase()
     {
         MockUserRepository = new Mock<IUserRepository>();
         MockPasswordHasher = new Mock<IPasswordHasher>();
+        MockTokenService = new Mock<ITokenService>();
         ResetMocks();
     }
 
@@ -33,6 +35,11 @@ public abstract class TestBase : IDisposable
     {
         MockUserRepository.Reset();
         MockPasswordHasher.Reset();
+        MockTokenService.Reset();
+
+        MockTokenService
+            .Setup(x => x.CreateToken(It.IsAny<VaultGuard.Domain.Entities.User>()))
+            .Returns("test.jwt.token");
 
         MockUserRepository
             .Setup(x => x.ExistsByEmailAsync(It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
